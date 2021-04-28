@@ -1,0 +1,19 @@
+Package: DelayedArraySaver
+Description: Saves the delayed operations of a DelayedArray to a HDF5 file.
+    This enables efficient recovery of the DelayedArray's contents in other analysis frameworks.
+Authors@R: person("Aaron", "Lun", role=c("cre", "aut"), email="infinite.monkeys.with.keyboards@gmail.com") 
+Version: 0.0.1
+Date: 2021-04-27
+License: GPL-3
+Depends: 
+    DelayedArray
+Imports:
+    rhdf5,
+    HDF5Array
+Suggests:
+    BiocStyle,
+    testthat,
+    rmarkdown,
+    knitr
+VignetteBuilder: knitr
+RoxygenNote: 7.1.1
