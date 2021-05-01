@@ -18,11 +18,16 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
     OPS <- x@OPS
     for (i in seq_along(OPS)) {
         current.op <- environment(OPS[[i]])$`.Generic`
-        instruction <- switch(current.op,
-            log=list(op="log"),
-            log2=list(op="log", args=list(base=2)),
-            log10=list(op="log", args=list(base=10))
-        )
+
+        if (is.null(info)) {
+            info <- .unary_Math(generic, envir)        
+        } 
+        if (is.null(info)) {
+            info <- .unary_Math2(generic, envir)        
+        } 
+        if (is.null(info)) {
+            info <- .unary_Arith(generic, envir)        
+        } 
 
         ipath <- file.path(path, i)
         h5createGroup(file, ipath)
@@ -38,3 +43,35 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
 
     saveLayer(x@seed, file, file.path(name, "seed"))
 })
+
+.unary_Math <- function(generic, envir) {
+    if (generic %in% getGroupMembers("Math")) {
+        list(op=generic)
+    }
+}
+
+.unary_Math2 <- function(generic, envir) {
+    if (generic %in% getGroupMembers("Math2")) {
+        list(op=generic, args=list(digits=envir$digits))
+    }
+}
+
+.unary_Ops <- function(generic, envir) {
+    if (generic %in% getGroupMembers("Arith") || 
+        generic %in% getGroupMembers("Ops") || 
+        generic %in% getGroupMembers("Logic")) 
+    {
+        e1 <- envir$e1
+        e2 <- envir$e2
+        left <- is(e2, "DelayedArray") # i.e., is the other argument on the left?
+        list(
+            op=generic,
+            args=list(
+                side=if (left) "left" else "right",
+                values=if (left) e1 else e2
+            )
+        )
+    }
+}
+
+
