@@ -10,7 +10,7 @@ setMethod("saveLayer", "DelayedSubset", function(x, file, name) {
     if (name!="") {
         h5createGroup(file, name)
     }
-    h5write(c("operation", "subset"), file, file.path(name, "type"))
+    h5write(c("operation", "SUBSET"), file, file.path(name, "type"))
 
     h5createGroup(file, file.path(name, "index"))
     indices <- x@index
