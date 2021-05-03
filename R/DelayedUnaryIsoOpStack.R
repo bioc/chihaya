@@ -34,7 +34,7 @@
 #' \itemize{
 #' \item For operations listed in \code{\link{Ops}}, \code{arguments} will contain a \code{side} dataset of length 1.
 #' This will either say \code{"left"} or \code{"right"}, indicating whether the operation is applied to the left or the right side of the seed.
-#' \code{arguments} will also contain \code{value} containing the value of the non-seed operand.
+#' \code{arguments} will also contain \code{value}, a dataset containing the value of the non-seed operand.
 #' \item For operations listed in \code{\link{Math2}}, \code{arguments} will contain a \code{digits} dataset.
 #' This contains the digits to be used in the various rounding operations.
 #' \item For operations listed in \code{\link{Math}}, \code{arguments} is ignored and should contain no arguments.
