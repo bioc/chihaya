@@ -62,6 +62,7 @@ setMethod("saveLayer", "DelayedUnaryIsoOpWithArgs", function(x, file, name) {
     invisible(NULL)
 })
 
+#' @importFrom DelayedArray sweep aperm
 .load_delayed_unary_iso_with_args <- function(file, path, contents) {
     x <- .dispatch_loader(file, file.path(path, "seed"), contents[["seed"]])
     if (!is(x, "DelayedArray")) x <- DelayedArray(x)
@@ -69,16 +70,28 @@ setMethod("saveLayer", "DelayedUnaryIsoOpWithArgs", function(x, file, name) {
     OP <- .dispatch_loader(file, file.path(path, "operation"), contents[["operation"]])
     FUN <- get(OP)
 
+    Largs <- .dispatch_loader(file, file.path(path, "left_arguments"), contents[["left_arguments"]])
+    Lalong <- .dispatch_loader(file, file.path(path, "left_along"), contents[["left_along"]])
+    if (length(Lalong) > 1) {
+        stop("multiple left-hand-side operations not supported yet")
+    }
+    for (i in seq_along(Largs)) {
+        MARGIN <- Lalong[i]
+        if (MARGIN==1) {
+            x <- FUN(Largs[[i]], x)
+        } else {
+            # Stolen from base::sweep.
+            perm <- c(MARGIN, seq_along(dim(x))[-MARGIN])
+            tmp <- aperm(x, perm)
+            tmp <- FUN(Largs[[i]], tmp)
+            x <- aperm(x, order(perm))
+        }
+    }
+
     Rargs <- .dispatch_loader(file, file.path(path, "right_arguments"), contents[["right_arguments"]])
     Ralong <- .dispatch_loader(file, file.path(path, "right_along"), contents[["right_along"]])
     for (i in seq_along(Rargs)) {
         x <- sweep(x, MARGIN=Ralong[i], STATS=Rargs[[i]], FUN=FUN)
-    }
-
-    Largs <- .dispatch_loader(file, file.path(path, "left_arguments"), contents[["left_arguments"]])
-    Lalong <- .dispatch_loader(file, file.path(path, "left_along"), contents[["left_along"]])
-    for (i in seq_along(Largs)) {
-        x <- sweep(x, MARGIN=Lalong[i], STATS=Largs[[i]], FUN=FUN)
     }
 
     x
