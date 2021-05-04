@@ -160,6 +160,43 @@ The group contains the following elements:
 
 Currently supported operations are `+`, `-`, `/`, `*` and `^`.
 
-# Seeds
+# Non-dataset seeds
 
-## External HDF5 seeds
+## Dense HDF5 array
+
+For dense HDF5 arrays, the second string in `_class` is `"hdf5 array"`.
+This group contains:
+
+- `path`, a length-1 string vector containing the path to the external HDF5 file.
+- `name`, a length-1 string vector containing the name of the dataset inside that file.
+- `sparse`, a length-1 integer vector to be interpreted as a boolean (0 for false, 1 for true),
+  indicating whether the dataset values can be treated as sparse.
+
+## Sparse HDF5 matrix
+
+For sparse HDF5 matrices, the second string in `_class` is `"sparse hdf5 matrix"`.
+This group contains:
+
+- `path`, a length-1 string vector containing the path to the external HDF5 file.
+- `name`, a length-1 string vector containing the name of the group inside that file.
+
+The referenced group should contain the data, indices and index pointers in compressed sparse column/row format.
+The orientation should be stored as the `h5sparse_format` attribute, a UTF-8-encoded string starting with either `csr` or `csc`.
+The shape should be stored as a length-2 integer vector in the `h5sparse_shape` attribute.
+
+## H5AD matrix
+
+For matrices in H5AD files, the second string in `_class` is `"h5ad matrix"`.
+This group contains:
+
+- `path`, a length-1 string vector containing the path to the external H5AD file.
+- `layer` (optional), a length-1 string vector specifying the name of the layer of interest.
+  If missing, the matrix is assumed to refer to the main matrix `X`.
+
+## 10X matrix
+
+For matrices in 10X HDF5 count files, the second string in `_class` is `"tenx matrix"`.
+This group contains:
+
+- `path`, a length-1 string vector containing the path to the external H5AD file.
+- `name`, a length-1 string vector containing the name of the group inside that file.
