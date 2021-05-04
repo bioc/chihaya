@@ -1,10 +1,47 @@
 # This tests various odds and ends not covered by other tests.
 # library(testthat); library(DelayedArraySaver); source("test-other.R")
 
+library(S4Vectors)
 library(Matrix)
 
+test_that("saving of an array works correctly", {
+    x0 <- matrix(runif(200), ncol=20)
+    x <- DelayedArray(x0)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+
+    arra <- rhdf5::h5read(tmp, "delayed/data")
+    expect_identical(x0, arra)
+    out <- loadDelayed(tmp)
+    expect_identical(x, out)
+
+    # Handles dimnames.
+    dimnames(x0) <- list(1:nrow(x), head(letters, ncol(x)))
+    x <- DelayedArray(x0)
+
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+
+    expect_identical(as.vector(rhdf5::h5read(tmp, "delayed/dimnames/1")), rownames(x))
+    expect_identical(as.vector(rhdf5::h5read(tmp, "delayed/dimnames/2")), colnames(x))
+
+    out <- loadDelayed(tmp)
+    expect_identical(x, out)
+
+    # Handles some missing dimnames.
+    rownames(x0) <- NULL
+    x <- DelayedArray(x0)
+
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+
+    out <- loadDelayed(tmp)
+    expect_identical(x, out)
+})
+
 test_that("saving of a CsparseMatrix works correctly", {
-    x <- DelayedArray(rsparsematrix(20, 10, 0.1))
+    x0 <- rsparsematrix(20, 10, 0.1)
+    x <- DelayedArray(x0)
     tmp <- tempfile(fileext=".h5")
     saveDelayed(x, tmp)
 
@@ -17,7 +54,8 @@ test_that("saving of a CsparseMatrix works correctly", {
     expect_identical(x, out)
 
     # Supports dimnames.
-    dimnames(x) <- list(LETTERS[1:20], letters[1:10])
+    dimnames(x0) <- list(LETTERS[1:20], letters[1:10])
+    x <- DelayedArray(x0)
     tmp <- tempfile(fileext=".h5")
     saveDelayed(x, tmp)
 

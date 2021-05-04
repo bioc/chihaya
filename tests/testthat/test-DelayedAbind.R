@@ -23,7 +23,7 @@ test_that("DelayedAbind works along rows", {
 
 test_that("DelayedAbind works along columns", {
     YY <- DelayedArray(matrix(runif(100), ncol=20)) # throwing in another dataset for some variety.
-    Z <- cbind(X, Y, YY)
+    Z <- BiocGenerics::cbind(X, Y, YY)
     temp <- tempfile(file=".h5")
     saveDelayed(Z, temp)
 
