@@ -81,7 +81,7 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
     {
         e1 <- envir$e1
         e2 <- envir$e2
-        left <- is(e1, "DelayedArray") # i.e., is the seed on the left?
+        left <- is(e2, "DelayedArray") # i.e., is the operation applied to the left of the seed?
         saveLayer(generic, file, file.path(path, "operation"))
         saveLayer(if (left) "left" else "right", file, file.path(path, "side"))
         saveLayer(if (left) e2 else e1, file, file.path(path, "value"))
@@ -109,9 +109,9 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
             side <- .dispatch_loader(file, file.path(path, "operations", o, "side"), current.view[["side"]])
             value <- .dispatch_loader(file, file.path(path, "operations", o, "value"), current.view[["value"]])
             if (identical(side, "left")) {
-                x <- FUN(x, value)
-            } else if (identical(side, "right")) {
                 x <- FUN(value, x)
+            } else if (identical(side, "right")) {
+                x <- FUN(x, value)
             }
         }
     }

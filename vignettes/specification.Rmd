@@ -87,7 +87,7 @@ getGroupMembers("Math2")
 ```
 
 Finally, the `Ops` category contain binary operations where one of the arguments is the seed array.
-The `side` dataset is a length-1 string vector specifying the side of the operation on which the seed array is located, i.e., `"left"` or `"right"`.
+The `side` dataset is a length-1 string vector specifying which side of the seed array the operation should be applied to, i.e., `"left"` or `"right"`.
 The other argument is held in `value`, a length-1 vector.
 
 ```{r, echo=FALSE}

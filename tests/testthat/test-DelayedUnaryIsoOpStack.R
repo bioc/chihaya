@@ -12,7 +12,7 @@ test_that("DelayedUnaryIsoOpStack works as expected", {
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
     expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operations/1/operation")), "+")
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operations/1/side")), "left")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operations/1/side")), "right")
     expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operations/2/operation")), "log2")
 
     roundtrip <- loadDelayed(temp)
@@ -28,7 +28,7 @@ test_that("DelayedUnaryIsoOpStack works correctly for the operation side", {
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
     expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operations/1/operation")), "/")
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operations/1/side")), "right")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operations/1/side")), "left")
 
     roundtrip <- loadDelayed(temp)
     expect_identical(as.matrix(Z), as.matrix(roundtrip))
@@ -42,7 +42,7 @@ test_that("DelayedUnaryIsoOpStack works correctly for the operation side", {
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
     expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operations/1/operation")), "-")
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operations/1/side")), "left")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operations/1/side")), "right")
 
     roundtrip <- loadDelayed(temp)
     expect_identical(as.matrix(Z), as.matrix(roundtrip))
