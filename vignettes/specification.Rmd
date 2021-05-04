@@ -1,0 +1,165 @@
+---
+title: File specification for delayed operations
+author:
+- name: Aaron Lun
+  email: infinite.monkeys.with.keyboards@gmail.com
+date: "Revised: 2021-05-02"
+package: DelayedArraySaver
+output:
+  BiocStyle::html_document
+vignette: >
+  %\VignetteIndexEntry{Format specification}
+  %\VignetteEngine{knitr::rmarkdown}
+  %VignetteEncoding{UTF-8}  
+---
+
+# Overview
+
+This file describes the layout of a HDF5 file containing delayed operations on an array.
+The general strategy is to use a hierarchical format where each level stores information about the operation and the "seed" array that it operates on;
+the seed itself can then be another operation, and so on, until all operations are resolved.
+
+# Basic structures
+
+Arrays are stored as HDF5 datasets with the associated type and dimensions.
+
+Vectors are represented by one-dimensional HDF5 datasets with a `_class` attribute set to a length-1 string array containing the `"vector"` string.
+
+Lists are stored as HDF5 groups with no `_class` attribute.
+The group will contain `_length` attribute, which is a length-1 integer array containing the number of elements in the list.
+The group elements are named by their positional index from 1 to the total number of elements; indices are allowed to be missing, in which case they are assumed to represent `NULL` or `None` elements.
+The group may also contain a `_names` attribute, which is a 1D array of strings containing the names of the elements.
+
+Delayed operations are represented by a HDF5 group with a `_class` attribute containing a length-2 string dataset, where the first string is `"operation"` and the second string specifies the category of the operation.
+Possible operations are described below.
+
+Seed arrays can either be HDF5 datasets, for ordinary dense arrays;
+or groups with a `_class` attribute containing a length 2 dataset, where the first string is `"seed"` and the second string specifies the class of the seed.
+Possible non-dataset seed array classes are described below.
+
+# Operations
+
+## Subsetting
+
+For subsetting operations, the second string in `_class` is `"subset"`.
+The group contains the following elements:
+
+- `index`, a list of integer vectors.
+  The list is of length equal to the number of dimensions in the seed array.
+  Each vector contains 1-based indices to subset the seed array in the corresponding dimension.
+  If a vector is missing, no subsetting is to be performed on that dimension.
+- `seed`, the seed array to be subsetted.
+
+## Combining 
+
+For combining operations, the second string in `_class` is `"combine"`.
+The group contains the following elements:
+
+- `along`, an integer vector containing the dimension to combine along.
+  A value of 1 indicates that seed arrays should be combined along rows,
+  while a value of 2 indicates that seed arrays should be combined along columns.
+- `seeds`, a list of seed arrays to be combined.
+  Dimensions of seed arrays should be identical except for the `along` dimension.
+
+## Stacked unary isometric operations
+
+For stacked unary operations, the second string in `_class` is `"unary isometric stack"`.
+The group contains the following elements:
+
+- `seed`, the seed array to be operated on.
+  Note that the "unary" in the name of this operation refers to the fact that we are only operating on one seed array.
+- `operations`, a group describing the stack of unary operations to perform.
+Each operation is represented by a group that is named by the execution order, i.e., `1` is performed first, then `2`, and so on.
+Each group in `operations` contains at least `operation`, a length-1 string vector containing the name of the operation to perform.
+
+Operations fall into several categories.
+The `Math` category takes no additional arguments and contains the following members, most of whom should be fairly self-explanatory:
+
+```{r, echo=FALSE}
+getGroupMembers("Math")
+```
+
+The `Math2` category takes an additional `digits` argument, which is stored as a length-1 integer vector inside the operation's group.
+Members of this category are:
+
+```{r, echo=FALSE}
+getGroupMembers("Math2")
+```
+
+Finally, the `Ops` category contain binary operations where one of the arguments is the seed array.
+The `side` dataset is a length-1 string vector specifying the side of the operation on which the seed array is located, i.e., `"left"` or `"right"`.
+The other argument is held in `value`, a length-1 vector.
+
+```{r, echo=FALSE}
+c(
+    getGroupMembers("Compare"), 
+    getGroupMembers("Arith"), 
+    getGroupMembers("Logic") 
+)
+```
+
+## Unary isometric operation with arguments
+
+For an unary operation with arguments, the second string in `_class` is `"unary isometric with arguments"`.
+The group contains the following elements:
+
+- `seed`, the seed array to be operated on.
+  Note that the "unary" in the name of this operation refers to the fact that we are only operating on one seed array.
+- `operation`, a length-1 string vector containing the name of the operation to perform.
+- `left_arguments`, a list of vectors containing the arguments on the left of the seed array when performing the specified `operation`.
+  Each vector should have length equal to the length of the relevant dimension of the seed array, as specified in `left_along`.
+- `left_along`, an integer vector of the dimensions along which the corresponding vector in `left_arguments` is applied.
+  A value of 1 means that the each entry of the vector is applied to a separate row, while a value of 2 means that each entry is applied to the columns.
+- `right_arguments`, a list of vectors containing the arguments on the right of the seed array when performing the specified `operation`.
+- `right_along`, an integer vector of the dimensions along which the corresponding vector in `right_arguments` is applied.
+
+Currently supported operations are `+`, `-`, `/`, `*` and `^`.
+
+## Transposition
+
+For transposition, the second string in `_class` is `"transpose"`.
+The group contains the following elements:
+
+- `seed`, the seed array to be transposed.
+- `permutation`, an integer vector of length equal to the number of dimensions.
+  This specifies the permutation of the dimensions - for example, a vector of `c(2, 1)` would represent transposition of a matrix.
+
+## Subarray assignment
+
+For subarray assignment, the second string in `_class` is `"subassign"`.
+The group contains the following elements:
+
+- `seed`, the seed array on which to perform the assignment. 
+- `index`, a list of integer vectors containing the indices in which to perform the assignment.
+  The list is of length equal to the number of dimensions in the seed array.
+  Each vector contains 1-based indices to define the subarray in the corresponding dimension.
+  If a vector is missing, no subsetting is to be performed on that dimension.
+- `value`, another seed array containing the replacement values.
+  This should have the same dimensions as the subarray specified by `index`.
+
+## Dimnames
+
+For dimnames replacement, the second string in `_class` is `"dimnames"`.
+The group contains the following elements:
+
+- `seed`, the seed array on which to perform the assignment. 
+- `dimnames`, a list of string vectors containing the new dimnames. 
+  The list is of length equal to the number of dimensions in the seed array.
+  Each vector is of length equal to the size of the corresponding dimension.
+  If a vector is missing, no dimnames are defined for that dimension.
+
+## N-ary isometric operations
+
+For an N-ary isommetric operation, the second string in `_class` is `"n-ary isometric"`.
+The group contains the following elements:
+
+- `seeds`, a list of seed arrays to be operated on.
+  All arrays should have the same dimensions.
+- `operation`, a length-1 string vector containing the name of the operation to perform.
+- `right_arguments`, a list of additional arguments to be used in the operation, to the right of all `seeds`.
+
+Currently supported operations are `+`, `-`, `/`, `*` and `^`.
+
+# Seeds
+
+## External HDF5 seeds
