@@ -28,14 +28,14 @@ setMethod("saveLayer", "DelayedAbind", function(x, file, name) {
         h5createGroup(file, name)
     }
     .label_group_class(file, name, c('operation', 'combine'))
-    saveLayer(x@along, file, file.path(name, "along"))
-    saveLayer(x@seeds, file, file.path(name, "seeds"))
+    h5write(x@along, file, file.path(name, "along"))
+    .save_list(x@seeds, file, file.path(name, "seeds"))
     invisible(NULL)
 })
 
 .load_delayed_combine <- function(file, name, contents) {
-    along <- .dispatch_loader(file, file.path(name, "along"), contents[["along"]])
-    seeds <- .dispatch_loader(file, file.path(name, "seeds"), contents[["seeds"]])
+    along <- .load_simple_vector(file, file.path(name, "along"))
+    seeds <- .load_list(file, file.path(name, "seeds"), contents[["seeds"]])
 
     for (i in seq_along(seeds)) {
         if (!is(seeds[[i]], "DelayedArray")) {

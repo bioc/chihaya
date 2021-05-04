@@ -28,7 +28,7 @@ setMethod("saveLayer", "DelayedSubset", function(x, file, name) {
         h5createGroup(file, name)
     }
     .label_group_class(file, name, c('operation', 'subset'))
-    saveLayer(x@index, file, file.path(name, "index"))
+    .save_list(x@index, file, file.path(name, "index"), vectors.only=TRUE)
     saveLayer(x@seed, file, file.path(name, "seed"))
     invisible(NULL)
 })
@@ -37,7 +37,7 @@ setMethod("saveLayer", "DelayedSubset", function(x, file, name) {
     x <- .dispatch_loader(file, file.path(name, "seed"), contents[["seed"]])
     if (!is(x, "DelayedArray")) x <- DelayedArray(x)
 
-    indices <- .dispatch_loader(file, file.path(name, "index"), contents[["index"]])
+    indices <- .load_list(file, file.path(name, "index"), contents[["index"]], vectors.only=TRUE)
     for (i in seq_along(indices)) {
         if (is.null(indices[[i]])) {
             indices[[i]] <- substitute()

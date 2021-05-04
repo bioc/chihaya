@@ -61,15 +61,17 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
 .unary_Math <- function(file, path, envir) {
     generic <- envir$`.Generic`
     if (generic %in% getGroupMembers("Math")) {
-        saveLayer(generic, file, file.path(path, "operation"))
+        h5write(generic, file, file.path(path, "operation"))
+        TRUE
     }
 }
 
 .unary_Math2 <- function(file, path, envir) {
     generic <- envir$`.Generic`
     if (generic %in% getGroupMembers("Math2")) {
-        saveLayer(generic, file, file.path(path, "operation"))
-        saveLayer(envir$digits, file, file.path(path, "digits"))
+        h5write(generic, file, file.path(path, "operation"))
+        h5write(envir$digits, file, file.path(path, "digits"))
+        TRUE
     }
 }
 
@@ -82,9 +84,10 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
         e1 <- envir$e1
         e2 <- envir$e2
         left <- is(e2, "DelayedArray") # i.e., is the operation applied to the left of the seed?
-        saveLayer(generic, file, file.path(path, "operation"))
-        saveLayer(if (left) "left" else "right", file, file.path(path, "side"))
-        saveLayer(if (left) e1 else e2, file, file.path(path, "value"))
+        h5write(generic, file, file.path(path, "operation"))
+        h5write(if (left) "left" else "right", file, file.path(path, "side"))
+        h5write(if (left) e1 else e2, file, file.path(path, "value"))
+        TRUE
     }
 }
 
@@ -96,18 +99,17 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
     OPS <- OPS[order(as.integer(OPS))]
 
     for (o in OPS) {
-        current.view <- contents[["operations"]][[o]]
-        op.name <- .dispatch_loader(file, file.path(path, "operations", o, "operation"), current.view[["operation"]])
+        op.name <- .load_simple_vector(file, file.path(path, "operations", o, "operation"))
         FUN <- get(op.name)
 
         if (op.name %in% getGroupMembers("Math")) {
             x <- FUN(x)
         } else if (op.name %in% getGroupMembers("Math2")) {
-            digits <- .dispatch_loader(file, file.path(path, "operations", o, "digits"), current.view[["digits"]])
+            digits <- .load_simple_vector(file, file.path(path, "operations", o, "digits"))
             x <- FUN(x, digits=digits)
         } else {
-            side <- .dispatch_loader(file, file.path(path, "operations", o, "side"), current.view[["side"]])
-            value <- .dispatch_loader(file, file.path(path, "operations", o, "value"), current.view[["value"]])
+            side <- .load_simple_vector(file, file.path(path, "operations", o, "side"))
+            value <- .load_simple_vector(file, file.path(path, "operations", o, "value"))
             if (identical(side, "left")) {
                 x <- FUN(value, x)
             } else if (identical(side, "right")) {

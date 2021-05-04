@@ -42,21 +42,21 @@ setMethod("saveLayer", "DelayedNaryIsoOp", function(x, file, name) {
     if (is.null(chosen)) {
         stop("unknown operation in ", class(x))
     }
-    saveLayer(chosen, file, file.path(name, "operation"))
+    h5write(chosen, file, file.path(name, "operation"))
 
-    saveLayer(x@Rargs, file, file.path(name, "right_arguments"))
-    saveLayer(x@seeds, file, file.path(name, "seeds"))
+    .save_list(x@Rargs, file, file.path(name, "right_arguments"))
+    .save_list(x@seeds, file, file.path(name, "seeds"))
     invisible(NULL)
 })
 
 .load_delayed_nary_iso <- function(file, name, contents) {
-    seeds <- .dispatch_loader(file, file.path(name, "seeds"), contents[["seeds"]])
+    seeds <- .load_list(file, file.path(name, "seeds"), contents[["seeds"]])
     for (i in seq_along(seeds)) {
         if (!is(seeds[[i]], "DelayedArray")) {
             seeds[[i]] <- DelayedArray(seeds[[i]])
         }
     }
-    op <- .dispatch_loader(file, file.path(name, "operation"), contents[["operation"]])
-    Rargs <- .dispatch_loader(file, file.path(name, "right_arguments"), contents[["right_arguments"]])
+    op <- .load_simple_vector(file, file.path(name, "operation"))
+    Rargs <- .load_list(file, file.path(name, "right_arguments"), contents[["dimnames"]])
     do.call(get(op), c(seeds, Rargs))
 }

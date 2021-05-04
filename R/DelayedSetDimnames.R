@@ -36,7 +36,7 @@ setMethod("saveLayer", "DelayedSetDimnames", function(x, file, name) {
         }
     }
 
-    saveLayer(dimnames, file, file.path(name, "dimnames"))
+    .save_list(dimnames, file, file.path(name, "dimnames"), vectors.only=TRUE)
     saveLayer(x@seed, file, file.path(name, "seed"))
     invisible(NULL)
 })
@@ -44,7 +44,7 @@ setMethod("saveLayer", "DelayedSetDimnames", function(x, file, name) {
 .load_delayed_dimnames <- function(file, name, contents) {
     x <- .dispatch_loader(file, file.path(name, "seed"), contents[["seed"]])
     if (!is(x, "DelayedArray")) x <- DelayedArray(x)
-    dnames <- .dispatch_loader(file, file.path(name, "dimnames"), contents[["dimnames"]])
+    dnames <- .load_list(file, file.path(name, "dimnames"), contents[["dimnames"]], vectors.only=TRUE)
     dimnames(x) <- dnames
     x
 }

@@ -41,7 +41,7 @@ setMethod("saveLayer", "DelayedUnaryIsoOpWithArgs", function(x, file, name) {
     if (is.null(chosen)) {
         stop("unknown operation in ", class(x))
     }
-    saveLayer(chosen, file, file.path(name, "operation"))
+    h5write(chosen, file, file.path(name, "operation"))
 
     # Saving the left and right args.
     for (side in c("left", "right")) {
@@ -53,9 +53,9 @@ setMethod("saveLayer", "DelayedUnaryIsoOpWithArgs", function(x, file, name) {
             along <- x@Ralong
         }
         argpath <- file.path(name, paste0(side, "_arguments"))
-        saveLayer(args, file, argpath)
+        .save_list(args, file, argpath, vectors.only=TRUE) # drops vector attributes, but I don't care.
         alongpath <- file.path(name, paste0(side, "_along"))
-        saveLayer(along, file, alongpath)
+        h5write(along, file, alongpath)
     }
 
     saveLayer(x@seed, file, file.path(name, "seed"))
@@ -67,14 +67,14 @@ setMethod("saveLayer", "DelayedUnaryIsoOpWithArgs", function(x, file, name) {
     x <- .dispatch_loader(file, file.path(path, "seed"), contents[["seed"]])
     if (!is(x, "DelayedArray")) x <- DelayedArray(x)
 
-    OP <- .dispatch_loader(file, file.path(path, "operation"), contents[["operation"]])
+    OP <- .load_simple_vector(file, file.path(path, "operation"))
     FUN <- get(OP)
 
-    Largs <- .dispatch_loader(file, file.path(path, "left_arguments"), contents[["left_arguments"]])
-    Lalong <- .dispatch_loader(file, file.path(path, "left_along"), contents[["left_along"]])
+    Lalong <- .load_simple_vector(file, file.path(path, "left_along"))
     if (length(Lalong) > 1) {
         stop("multiple left-hand-side operations not supported yet")
     }
+    Largs <- .load_list(file, file.path(path, "left_arguments"), contents[["left_arguments"]], vectors.only=TRUE)
     for (i in seq_along(Largs)) {
         MARGIN <- Lalong[i]
         if (MARGIN==1) {
@@ -88,8 +88,8 @@ setMethod("saveLayer", "DelayedUnaryIsoOpWithArgs", function(x, file, name) {
         }
     }
 
-    Rargs <- .dispatch_loader(file, file.path(path, "right_arguments"), contents[["right_arguments"]])
-    Ralong <- .dispatch_loader(file, file.path(path, "right_along"), contents[["right_along"]])
+    Rargs <- .load_list(file, file.path(path, "right_arguments"), contents[["right_arguments"]], vectors.only=TRUE)
+    Ralong <- .load_simple_vector(file, file.path(path, "right_along"))
     for (i in seq_along(Rargs)) {
         x <- sweep(x, MARGIN=Ralong[i], STATS=Rargs[[i]], FUN=FUN)
     }

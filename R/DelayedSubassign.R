@@ -28,7 +28,7 @@ setMethod("saveLayer", "DelayedSubassign", function(x, file, name) {
         h5createGroup(file, name)
     }
     .label_group_class(file, name, c('operation', 'subassign'))
-    saveLayer(x@Lindex, file, file.path(name, "index"))
+    .save_list(x@Lindex, file, file.path(name, "index"), vectors.only=TRUE)
     saveLayer(x@Rvalue, file, file.path(name, "value"))
     saveLayer(x@seed, file, file.path(name, "seed"))
     invisible(NULL)
@@ -38,7 +38,7 @@ setMethod("saveLayer", "DelayedSubassign", function(x, file, name) {
     x <- .dispatch_loader(file, file.path(path, "seed"), contents[["seed"]])
     if (!is(x, "DelayedArray")) x <- DelayedArray(x)
 
-    index <- .dispatch_loader(file, file.path(path, "index"), contents[["index"]])
+    index <- .load_list(file, file.path(path, "index"), contents[["index"]], vectors.only=TRUE)
     value <- .dispatch_loader(file, file.path(path, "value"), contents[["value"]])
 
     for (i in seq_along(index)) {

@@ -1,7 +1,9 @@
 #' @export
 loadDelayed <- function(file, path="delayed") {
     contents <- .list_contents(file)
-    .dispatch_loader(file, path, contents[[path]])
+    fragmented <- strsplit(path, "/")[[1]]
+    if (fragmented[1] == "") fragmented <- fragmented[-1]
+    .dispatch_loader(file, path, contents[[fragmented]])
 }
 
 #' @importFrom rhdf5 h5ls
@@ -41,15 +43,11 @@ loadDelayed <- function(file, path="delayed") {
     attrs <- h5readAttributes(file, path)
 
     if (is.list(contents)) {
-        if (is.null(attrs$`_class`)) {
-            vals <- vector("list", attrs$`_length`)
-            for (i in names(contents)) {
-                vals[[as.integer(i)]] <- .dispatch_loader(file, file.path(path, i), contents[[i]])
-            }
-            names(vals) <- as.vector(attrs$`_names`)
+        if (is.null(attrs$delayed_type)) {
+            vals <- .load_list(file, path, contents)
 
-        } else if (identical(attrs$`_class`[1], "operation")) {
-            FUN <- switch(attrs$`_class`[2],
+        } else if (identical(attrs$delayed_type[1], "operation")) {
+            FUN <- switch(attrs$delayed_type[2],
                 subset=.load_delayed_subset,
                 transpose=.load_delayed_aperm,
                 combine=.load_delayed_combine,
@@ -61,8 +59,8 @@ loadDelayed <- function(file, path="delayed") {
             )
             vals <- FUN(file, path, contents)
 
-        } else if (identical(attrs$`_class`[1], "seed")) {
-            FUN <- switch(attrs$`_class`[2],
+        } else if (identical(attrs$delayed_type[1], "seed")) {
+            FUN <- switch(attrs$delayed_type[2],
                 `csparse matrix`=.load_csparse_matrix,
                 `external hdf5 array`=.load_dense_hdf5_array,
                 `external sparse hdf5 matrix`=.load_sparse_hdf5_matrix,
@@ -70,13 +68,19 @@ loadDelayed <- function(file, path="delayed") {
                 `external tenx matrix`=.load_tenx_matrix
             ) 
             vals <- FUN(file, path, contents)
+
+        } else if (identical(attrs$delayed_type[1], "vector")) {
+            vals <- .load_vector(file, path, contents)
+
+        } else if (identical(attrs$delayed_type[1], "array")) {
+            vals <- .load_array(file, path, contents)
+
+        } else {
+            stop("unsupported type '", attrs$delayed_type[1], "'")
         }
 
     } else {
         vals <- h5read(file, path)
-        if (identical(attrs$`_class`[1], "vector")) {
-            vals <- as.vector(vals)
-        }
     }
 
     vals

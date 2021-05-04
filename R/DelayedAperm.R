@@ -28,14 +28,14 @@ setMethod("saveLayer", "DelayedAperm", function(x, file, name) {
         h5createGroup(file, name)
     }
     .label_group_class(file, name, c('operation', 'transpose'))
-    saveLayer(x@perm, file, file.path(name, "permutation"))
+    h5write(x@perm, file, file.path(name, "permutation"))
     saveLayer(x@seed, file, file.path(name, "seed"))
     invisible(NULL)
 })
 
 .load_delayed_aperm <- function(file, name, contents) {
     x <- .dispatch_loader(file, file.path(name, "seed"), contents[["seed"]])
-    perm <- .dispatch_loader(file, file.path(name, "permutation"), contents[["permutation"]])
+    perm <- .load_simple_vector(file, file.path(name, "permutation"))
     if (!is(x, "DelayedArray")) x <- DelayedArray(x)
     aperm(x, perm)
 }
