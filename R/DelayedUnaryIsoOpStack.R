@@ -84,7 +84,7 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
         left <- is(e2, "DelayedArray") # i.e., is the operation applied to the left of the seed?
         saveLayer(generic, file, file.path(path, "operation"))
         saveLayer(if (left) "left" else "right", file, file.path(path, "side"))
-        saveLayer(if (left) e2 else e1, file, file.path(path, "value"))
+        saveLayer(if (left) e1 else e2, file, file.path(path, "value"))
     }
 }
 
