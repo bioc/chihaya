@@ -63,10 +63,11 @@ loadDelayed <- function(file, path="delayed") {
 
         } else if (identical(attrs$`_class`[1], "seed")) {
             FUN <- switch(attrs$`_class`[2],
-                `hdf5 array`=.load_dense_hdf5_array,
-                `sparse hdf5 matrix`=.load_sparse_hdf5_matrix,
-                `h5ad matrix`=.load_h5ad_matrix,
-                `tenx matrix`=.load_tenx_matrix
+                `csparse matrix`=.load_csparse_matrix,
+                `external hdf5 array`=.load_dense_hdf5_array,
+                `external sparse hdf5 matrix`=.load_sparse_hdf5_matrix,
+                `external h5ad matrix`=.load_h5ad_matrix,
+                `external tenx matrix`=.load_tenx_matrix
             ) 
             vals <- FUN(file, path, contents)
         }

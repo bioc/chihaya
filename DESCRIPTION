@@ -8,6 +8,8 @@ License: GPL-3
 Depends: 
     DelayedArray
 Imports:
+    methods,
+    Matrix,
     rhdf5,
     HDF5Array
 Suggests:
