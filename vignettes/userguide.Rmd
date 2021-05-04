@@ -1,0 +1,114 @@
+---
+title: Saving and reloading DelayedArray objects
+author:
+- name: Aaron Lun
+  email: infinite.monkeys.with.keyboards@gmail.com
+date: "Revised: 2021-05-02"
+package: DelayedArraySaver
+output:
+  BiocStyle::html_document
+vignette: >
+  %\VignetteIndexEntry{1. User guide}
+  %\VignetteEngine{knitr::rmarkdown}
+  %VignetteEncoding{UTF-8}  
+---
+
+```{r, echo=FALSE}
+library(BiocStyle)
+knitr::opts_chunk$set(error=FALSE, warning=FALSE, message=FALSE)
+```
+
+# Motivation
+
+The `r Biocpkg("DelayedArraySaver")` package saves `DelayedArray` objects for efficient, portable and stable reproduction of delayed operations in a new R session or other programming frameworks.
+
+- **Portability**.
+  We provide a file specification in a standard format (HDF5) that enables other languages to easily interpret and reproduce the delayed operations.
+- **Stability**.
+  By converting `r Biocpkg("DelayedArray")` operations into our specification, we provide a layer of protection against changes in the S4 class structure that would invalidate serialized RDS objects.
+- **Efficiency**. 
+  We avoid any realization of the delayed operations, enabling quick saving and avoiding loss of data structure in the seed (e.g., sparsity).
+
+# Quick start
+
+Make a `DelayedArray` object with some operations:
+
+```{r}
+library(DelayedArray)
+x <- DelayedArray(matrix(runif(1000), ncol=10))
+x <- x[11:15,] / runif(5) 
+x <- log2(x + 1)
+x
+showtree(x)
+```
+
+Save it into a HDF5 file with `saveDelayed()`:
+
+```{r}
+library(DelayedArraySaver)
+tmp <- tempfile(fileext=".h5")
+saveDelayed(x, tmp)
+rhdf5::h5ls(tmp)
+```
+
+And then load it back in later:
+
+```{r}
+y <- loadDelayed(tmp)
+y
+```
+
+Of course, this is not a particularly interesting case as we end up saving the original array inside our HDF5 file anyway.
+The real fun begins when you have some more interesting seeds.
+
+# More interesting seeds
+
+We can use the delayed nature of the operations to avoid breaking sparsity.
+For example:
+
+```{r}
+library(Matrix)
+x <- rsparsematrix(1000, 1000, density=0.01)
+x <- DelayedArray(x) + runif(1000)
+
+tmp <- tempfile(fileext=".h5")
+saveDelayed(x, tmp)
+rhdf5::h5ls(tmp)
+file.info(tmp)[["size"]]
+
+# Compared to a dense array.
+tmp2 <- tempfile(fileext=".h5")
+out <- HDF5Array::writeHDF5Array(x, tmp2, "data")
+file.info(tmp2)[["size"]]
+
+# Loading it back in.
+y <- loadDelayed(tmp)
+showtree(y)
+```
+
+We can also store references to external files, thus avoiding data duplication:
+
+```{r}
+library(DropletTestFiles)
+fname <- getTestFile("tenx-2.0.1-nuclei_900/1.0.0/filtered.h5")
+file.info(fname)[["size"]] # size of the actual file
+
+library(HDF5Array)
+test <- TENxMatrix(fname, "mm10")
+stuff <- log2(test + 1)
+stuff
+
+tmp <- tempfile(fileext=".h5")
+saveDelayed(stuff, tmp)
+rhdf5::h5ls(tmp)
+file.info(tmp)[["size"]] # size of the delayed operations + pointer to the actual file
+
+y <- loadDelayed(tmp)
+y
+```
+
+# Session information {-}
+
+```{r}
+sessionInfo()
+```
