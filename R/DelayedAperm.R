@@ -21,6 +21,7 @@
 #' loadDelayed(temp)
 #' 
 #' @export
+#' @rdname DelayedAperm
 #' @importFrom rhdf5 h5createGroup h5write
 setMethod("saveLayer", "DelayedAperm", function(x, file, name) {
     if (name!="") {

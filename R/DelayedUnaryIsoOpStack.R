@@ -21,6 +21,7 @@
 #' loadDelayed(temp)
 #' 
 #' @export
+#' @rdname DelayedUnaryIsoOpStack
 #' @importFrom rhdf5 h5createGroup h5write
 setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
     if (name!="") {

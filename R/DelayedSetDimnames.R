@@ -21,6 +21,7 @@
 #' loadDelayed(temp)
 #' 
 #' @export
+#' @rdname DelayedSetDimnames
 #' @importFrom rhdf5 h5createGroup h5write
 setMethod("saveLayer", "DelayedSetDimnames", function(x, file, name) {
     if (name!="") {

@@ -22,6 +22,7 @@
 #' loadDelayed(temp)
 #' 
 #' @export
+#' @rdname DelayedNaryIsoOp
 #' @importFrom rhdf5 h5createGroup h5write
 setMethod("saveLayer", "DelayedNaryIsoOp", function(x, file, name) {
     if (name!="") {

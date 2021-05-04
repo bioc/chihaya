@@ -21,6 +21,7 @@
 #' loadDelayed(temp)
 #' 
 #' @export
+#' @rdname DelayedSubset
 #' @importFrom rhdf5 h5createGroup h5write
 setMethod("saveLayer", "DelayedSubset", function(x, file, name) {
     if (name!="") {

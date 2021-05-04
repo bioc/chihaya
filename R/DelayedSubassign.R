@@ -21,6 +21,7 @@
 #' loadDelayed(temp)
 #' 
 #' @export
+#' @rdname DelayedSubassign
 #' @importFrom rhdf5 h5createGroup h5write
 setMethod("saveLayer", "DelayedSubassign", function(x, file, name) {
     if (name!="") {
