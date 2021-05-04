@@ -14,6 +14,7 @@ Suggests:
     BiocStyle,
     testthat,
     rmarkdown,
-    knitr
+    knitr,
+    DropletTestFiles
 VignetteBuilder: knitr
 RoxygenNote: 7.1.1

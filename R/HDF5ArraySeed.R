@@ -64,11 +64,11 @@ setMethod("saveLayer", "H5SparseMatrixSeed", function(x, file, name) {
     invisible(NULL)
 })
 
-#' @importFrom HDF5Array H5SparseMatrixSeed
+#' @importFrom HDF5Array H5SparseMatrix
 .load_sparse_hdf5_matrix <- function(file, name, contents) {
     path <- .dispatch_loader(file, file.path(name, "path"), contents[["path"]])
     gname <- .dispatch_loader(file, file.path(name, "name"), contents[["name"]])
-    H5SparseMatrixSeed(path, gname)
+    H5SparseMatrix(path, gname)
 }
 
 #' @export
@@ -84,11 +84,11 @@ setMethod("saveLayer", "TENxMatrixSeed", function(x, file, name) {
     invisible(NULL)
 })
 
-#' @importFrom HDF5Array TENxMatrixSeed
+#' @importFrom HDF5Array TENxMatrix
 .load_tenx_matrix <- function(file, name, contents) {
     path <- .dispatch_loader(file, file.path(name, "path"), contents[["path"]])
     gname <- .dispatch_loader(file, file.path(name, "name"), contents[["name"]])
-    TENxMatrixSeed(path, gname)
+    TENxMatrix(path, gname)
 }
 
 #' @export
@@ -142,7 +142,7 @@ setMethod("saveLayer", "CSC_H5ADMatrixSeed", function(x, file, name) {
     invisible(NULL)
 })
 
-#' @importFrom HDF5Array H5ADMatrixSeed
+#' @importFrom HDF5Array H5ADMatrix
 .load_h5ad_matrix <- function(file, name, contents) {
     path <- .dispatch_loader(file, file.path(name, "path"), contents[["path"]])
     if ("layer" %in% names(contents)) {
@@ -150,5 +150,5 @@ setMethod("saveLayer", "CSC_H5ADMatrixSeed", function(x, file, name) {
     } else {
         layer <- NULL
     }
-    H5ADMatrixSeed(path, layer=layer)
+    H5ADMatrix(path, layer=layer)
 }
