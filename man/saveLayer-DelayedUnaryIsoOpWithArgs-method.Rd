@@ -19,31 +19,15 @@ A group is created at \code{name} containing the contents of the DelayedUnaryIso
 }
 \description{
 Save a \linkS4class{DelayedUnaryIsoOpWithArgs} object into a HDF5 file.
-}
-\details{
-The DelayedUnaryIsoOpWithArgs class is represented on file by several elements within the \code{name}d group.
-\itemize{
-\item \code{type}, a character dataset with two elements.
-The first is set to \code{"OPERATION"} and the second is set to \code{"UNARY_WITH_ARGS"}.
-\item \code{left_arguments}, a group containing information about the arguments to apply to the seed on the left.
-\item \code{left_along}, an integer dataset of length equal to the number of left arguments.
-\item \code{right_arguments}, a group containing information about the arguments to apply to the seed on the right.
-\item \code{right_along}, an integer dataset of length equal to the number of right arguments.
-}
-
-Each argument in \code{left_arguments} is represented by a 1-dimensional dataset of the relevant type, named according to the positional index of that argument.
-This dataset has number of elements equal to the length of the seed dimension referenced in the corresponding element of \code{left_along}.
-The idea is to apply the operation to the seed along the referenced dimension, recycling the argument's values across the entire array.
-The same logic applies for \code{right_arguments} and \code{right_along}.
-
-We strongly recommend reading the documentation for \linkS4class{DelayedUnaryIsoOpWithArgs} to understand what's going on here.
+See the \dQuote{Specification} vignette for details on the layout.
 }
 \examples{
 X <- DelayedArray(matrix(runif(100), ncol=5))
 Y <- (1:20 + X) / runif(5)
 temp <- tempfile(fileext=".h5")
-saveDelayedOps(Y, temp)
+saveDelayed(Y, temp)
 rhdf5::h5ls(temp)
+loadDelayed(temp)
 
 }
 \author{

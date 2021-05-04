@@ -15,28 +15,19 @@
 }
 \value{
 A \code{NULL}, invisibly.
-A group is created at \code{name} containing the contents of the DelayedUnaryIsoOpStack.
+A group is created at \code{name} containing the contents of the DelayedAbind.
 }
 \description{
 Save a \linkS4class{DelayedAbind} object.
-}
-\details{
-The DelayedAbind class is represented on file by several elements within the \code{name}d group.
-\itemize{
-\item \code{type}, a character dataset with two elements.
-The first is set to \code{"OPERATION"} and the second is set to \code{"COMBINE"}.
-\item \code{along}, a dataset specifying the dimension to combine along.
-This should be integer and of length 1.
-\item \code{seeds}, a group describing the seeds to combine.
-This contains additional groups or datasets, named by the order in which they are to be combined.
-}
+See the \dQuote{Specification} vignette for details on the layout.
 }
 \examples{
 X <- DelayedArray(matrix(runif(100), ncol=20))
 Y <- cbind(X, X)
 temp <- tempfile(fileext=".h5")
-saveDelayedOps(Y, temp)
+saveDelayed(Y, temp)
 rhdf5::h5ls(temp)
+loadDelayed(temp)
 
 }
 \author{

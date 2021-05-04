@@ -19,44 +19,15 @@ A group is created at \code{name} containing the contents of the DelayedUnaryIso
 }
 \description{
 Save a \linkS4class{DelayedUnaryIsoOpStack} object into a HDF5 file.
-}
-\details{
-The DelayedUnaryIsoOpStack class is represented on file by several elements within the \code{name}d group.
-\itemize{
-\item \code{type}, a character dataset with two elements.
-The first is set to \code{"OPERATION"} and the second is set to \code{"UNARY"}.
-\item \code{operations}, a group containing information about the operations.
-Each operation is represented by a group that is named by the execution order, i.e., \code{"1"} is performed first, then \code{"2"}, and so on.
-\item \code{seed}, a group or dataset containing the seed to be operated on.
-}
-
-Each group in \code{operations} contains:
-\itemize{
-\item \code{name}, a character dataset with a single element naming the unary operation to be performed.
-The seed is assumed to be the first argument in this operation.
-Note that the unary-ness refers to the fact that we only need to consider one seed; there may still be multiple arguments.
-\item (optional) \code{arguments}, a group containing additional arguments to use in the operation, in addition to the \code{seed}.
-Each argument is a dataset inside the group where the name of the dataset is the name of the argument.
-If this group is not present, no further arguments are necessary.
-}
-
-Valid operation names in \code{name} are those listed for \code{\link{Ops}}, \code{\link{Math}} and \code{\link{Math2}}.
-The format of \code{arguments} depends on the nature of \code{name}.
-\itemize{
-\item For operations listed in \code{\link{Ops}}, \code{arguments} will contain a \code{side} dataset of length 1.
-This will either say \code{"left"} or \code{"right"}, indicating whether the operation is applied to the left or the right side of the seed.
-\code{arguments} will also contain \code{value}, a dataset containing the value of the non-seed operand.
-\item For operations listed in \code{\link{Math2}}, \code{arguments} will contain a \code{digits} dataset.
-This contains the digits to be used in the various rounding operations.
-\item For operations listed in \code{\link{Math}}, \code{arguments} is ignored and should contain no arguments.
-}
+See the \dQuote{Specification} vignette for details on the layout.
 }
 \examples{
 X <- DelayedArray(matrix(runif(100), ncol=20))
 Y <- log2(X + 10)
 temp <- tempfile(fileext=".h5")
-saveDelayedOps(Y, temp)
+saveDelayed(Y, temp)
 rhdf5::h5ls(temp)
+loadDelayed(temp)
 
 }
 \author{

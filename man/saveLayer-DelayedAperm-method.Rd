@@ -19,23 +19,15 @@ A group is created at \code{name} containing the contents of the DelayedAperm.
 }
 \description{
 Save a \linkS4class{DelayedAperm} object.
-}
-\details{
-The DelayedAperm class is represented on file by several elements within the \code{name}d group.
-\itemize{
-\item \code{type}, a character dataset with two elements.
-The first is set to \code{"OPERATION"} and the second is set to \code{"TRANSPOSE"}.
-\item \code{along}, a dataset specifying the dimension to combine along.
-This should be of length equal to the number of dimensions and contain unique values in [1, number of dimensions].
-\item \code{seed}, a group or dataset containing the seed to be permuted.
-}
+See the \dQuote{Specification} vignette for details on the layout.
 }
 \examples{
 X <- DelayedArray(matrix(runif(100), ncol=20))
 Y <- t(X)
 temp <- tempfile(fileext=".h5")
-saveDelayedOps(Y, temp)
+saveDelayed(Y, temp)
 rhdf5::h5ls(temp)
+loadDelayed(temp)
 
 }
 \author{
