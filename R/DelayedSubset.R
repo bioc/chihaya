@@ -35,7 +35,14 @@ setMethod("saveLayer", "DelayedSubset", function(x, file, name) {
 
 .load_delayed_subset <- function(file, name, contents) {
     x <- .dispatch_loader(file, file.path(name, "seed"), contents[["seed"]])
-    indices <- .dispatch_loader(file, file.path(name, "index"), contents[["index"]])
     if (!is(x, "DelayedArray")) x <- DelayedArray(x)
+
+    indices <- .dispatch_loader(file, file.path(name, "index"), contents[["index"]])
+    for (i in seq_along(indices)) {
+        if (is.null(indices[[i]])) {
+            indices[[i]] <- substitute()
+        }
+    }
+
     do.call(`[`, c(list(x), indices, list(drop=FALSE)))
 }

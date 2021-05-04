@@ -41,5 +41,11 @@ setMethod("saveLayer", "DelayedSubassign", function(x, file, name) {
     index <- .dispatch_loader(file, file.path(path, "index"), contents[["index"]])
     value <- .dispatch_loader(file, file.path(path, "value"), contents[["value"]])
 
+    for (i in seq_along(index)) {
+        if (is.null(index[[i]])) {
+            index[[i]] <- substitute()
+        }
+    }
+
     do.call(`[<-`, c(list(x=x), index, list(value=value)))
 } 
