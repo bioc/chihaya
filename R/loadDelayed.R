@@ -1,3 +1,23 @@
+#' Load a DelayedMatrix
+#'
+#' Load a \linkS4class{DelayedMatrix} object from a location within a HDF5 file.
+#'
+#' @param file String containing a path to a HDF5 file.
+#' @param path String containing a path inside a HDF5 file containing the DelayedMatrix.
+#' 
+#' @return A \linkS4class{DelayedMatrix} containing the contents at \code{path}.
+#'
+#' @author Aaron Lun
+#' @examples
+#' library(HDF5Array)
+#' X <- rsparsematrix(100, 20, 0.1)
+#' Y <- DelayedArray(X)
+#' Z <- log2(Y + 1)
+#'
+#' temp <- tempfile(fileext=".h5")
+#' saveDelayed(Z, temp)
+#' loadDelayed(temp)
+#'
 #' @export
 loadDelayed <- function(file, path="delayed") {
     contents <- .list_contents(file)
