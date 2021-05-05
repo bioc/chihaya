@@ -4,8 +4,7 @@
 #' See the \dQuote{Specification} vignette for details on the layout.
 #'
 #' @param x A \linkS4class{DelayedUnaryIsoOpWithArgs} object.
-#' @param file String containing the path to a HDF5 file.
-#' @param name String containing the name of the group to save into.
+#' @inheritParams saveLayer
 #' 
 #' @return A \code{NULL}, invisibly.
 #' A group is created at \code{name} containing the contents of the DelayedUnaryIsoOpWithArgs.
