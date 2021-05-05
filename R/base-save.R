@@ -1,4 +1,28 @@
+#' Saving simple seed classes
+#'
+#' Methods to save simple seed classes into the delayed operation file.
+#' See the \dQuote{Specification} vignette for details on the layout.
+#'
+#' @param x An R object of the indicated class.
+#' @param file String containing the path to a HDF5 file.
+#' @param name String containing the name of the group to save into.
+#' 
+#' @return A \code{NULL}, invisibly.
+#' A group is created at \code{name} containing the contents of \code{x}.
+#' 
+#' @author Aaron Lun
+#'
+#' @examples
+#' library(HDF5Array)
+#' X <- rsparsematrix(100, 20, 0.1)
+#' Y <- DelayedArray(X)
+#' temp <- tempfile(fileext=".h5")
+#' saveDelayed(Y, temp)
+#' rhdf5::h5ls(temp)
+#' loadDelayed(temp)
+#'
 #' @export
+#' @rdname base-save
 #' @importFrom HDF5Array writeHDF5Array 
 setMethod("saveLayer", "array", function(x, file, name) {
     if (name!="") {
@@ -27,11 +51,14 @@ setMethod("saveLayer", "array", function(x, file, name) {
 }
 
 #' @export
+#' @rdname base-save
+#' @importFrom DelayedArray DelayedArray
 setMethod("saveLayer", "DelayedArray", function(x, file, name) {
     saveLayer(x@seed, file, name)
 })
 
 #' @export
+#' @rdname base-save
 #' @importFrom rhdf5 h5createGroup
 #' @importClassesFrom Matrix CsparseMatrix
 setMethod("saveLayer", "CsparseMatrix", function(x, file, name) {
