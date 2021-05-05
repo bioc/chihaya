@@ -33,6 +33,7 @@ setMethod("saveLayer", "DelayedAbind", function(x, file, name) {
     invisible(NULL)
 })
 
+#' @import DelayedArray
 .load_delayed_combine <- function(file, name, contents) {
     along <- .load_simple_vector(file, file.path(name, "along"))
     seeds <- .load_list(file, file.path(name, "seeds"), contents[["seeds"]])

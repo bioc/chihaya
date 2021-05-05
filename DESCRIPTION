@@ -1,4 +1,5 @@
 Package: DelayedArraySaver
+Title: Save DelayedArrays and Delayed Operations 
 Description: Saves the delayed operations of a DelayedArray to a HDF5 file.
     This enables efficient recovery of the DelayedArray's contents in other analysis frameworks.
 Authors@R: person("Aaron", "Lun", role=c("cre", "aut"), email="infinite.monkeys.with.keyboards@gmail.com") 

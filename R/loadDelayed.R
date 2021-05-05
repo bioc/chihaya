@@ -89,9 +89,6 @@ loadDelayed <- function(file, path="delayed") {
             ) 
             vals <- FUN(file, path, contents)
 
-        } else if (identical(attrs$delayed_type[1], "vector")) {
-            vals <- .load_vector(file, path, contents)
-
         } else if (identical(attrs$delayed_type[1], "array")) {
             vals <- .load_array(file, path, contents)
 

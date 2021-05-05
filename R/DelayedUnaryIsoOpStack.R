@@ -47,7 +47,7 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
             info <- .unary_Ops(file, ipath, OP)
         } 
         if (is.null(info)) {
-            stop("unknown generic function '", envir$.Generic, "' in ", class(x))
+            stop("unknown OPS[[", i, "]] function in ", class(x))
         }
     }
 
@@ -68,9 +68,10 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
     }
 
     # Special case for log.
+    base <- envir$base
     if (isTRUE(all.equal(OP, function(a) log(a, base=base)))) {
         h5write("log", file, file.path(path, "operation"))
-        h5write(environment(OP)$base, file, file.path(path, "base"))
+        h5write(base, file, file.path(path, "base"))
         return(TRUE)
     }
 }
