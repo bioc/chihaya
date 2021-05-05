@@ -49,6 +49,24 @@ test_that("DelayedUnaryIsoOpStack works correctly for the operation side", {
     expect_s4_class(roundtrip@seed, "DelayedUnaryIsoOpStack")
 })
 
+test_that("DelayedUnaryIsoOpStack works for log", {
+    Z <- log(X)
+    temp <- tempfile(fileext=".h5")
+    saveDelayed(Z, temp)
+
+    manifest <- rhdf5::h5ls(temp)
+    all.paths <- file.path(manifest$group, manifest$name)
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operations/1/operation")), "log")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operations/1/base")), exp(1))
+
+    # Works with non-default base.
+    Z <- log(X, base=3)
+    temp <- tempfile(fileext=".h5")
+    saveDelayed(Z, temp)
+    out <- loadDelayed(temp)
+    expect_equal(Z, out)
+})
+
 test_that("DelayedUnaryIsoOpStack works for Math2", {
     Z <- round(X)
     temp <- tempfile(fileext=".h5")

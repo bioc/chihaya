@@ -32,21 +32,20 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
     path <- file.path(name, "operations")
     h5createGroup(file, path)
 
-    OPS <- x@OPS
-    for (i in seq_along(OPS)) {
-        envir <- environment(OPS[[i]])
+    for (i in seq_along(x@OPS)) {
+        OP <- x@OPS[[i]]
         ipath <- file.path(path, i)
         h5createGroup(file, ipath)
 
         info <- NULL
         if (is.null(info)) {
-            info <- .unary_Math(file, ipath, envir)        
+            info <- .unary_Math(file, ipath, OP)
         } 
         if (is.null(info)) {
-            info <- .unary_Math2(file, ipath, envir)
+            info <- .unary_Math2(file, ipath, OP)
         } 
         if (is.null(info)) {
-            info <- .unary_Ops(file, ipath, envir)
+            info <- .unary_Ops(file, ipath, OP)
         } 
         if (is.null(info)) {
             stop("unknown generic function '", envir$.Generic, "' in ", class(x))
@@ -58,15 +57,27 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
     invisible(NULL)
 })
 
-.unary_Math <- function(file, path, envir) {
+.unary_Math <- function(file, path, OP) {
+    envir <- environment(OP)
     generic <- envir$`.Generic`
-    if (generic %in% getGroupMembers("Math")) {
-        h5write(generic, file, file.path(path, "operation"))
-        TRUE
+
+    if (!is.null(generic)) {
+        if (generic %in% getGroupMembers("Math")) {
+            h5write(generic, file, file.path(path, "operation"))
+            return(TRUE)
+        }
+    }
+
+    # Special case for log.
+    if (isTRUE(all.equal(OP, function(a) log(a, base=base)))) {
+        h5write("log", file, file.path(path, "operation"))
+        h5write(environment(OP)$base, file, file.path(path, "base"))
+        return(TRUE)
     }
 }
 
-.unary_Math2 <- function(file, path, envir) {
+.unary_Math2 <- function(file, path, OP) {
+    envir <- environment(OP)
     generic <- envir$`.Generic`
     if (generic %in% getGroupMembers("Math2")) {
         h5write(generic, file, file.path(path, "operation"))
@@ -75,7 +86,8 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
     }
 }
 
-.unary_Ops <- function(file, path, envir) {
+.unary_Ops <- function(file, path, OP) {
+    envir <- environment(OP)
     generic <- envir$`.Generic`
     if (generic %in% getGroupMembers("Arith") || 
         generic %in% getGroupMembers("Compare") || 
@@ -103,7 +115,12 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
         FUN <- get(op.name)
 
         if (op.name %in% getGroupMembers("Math")) {
-            x <- FUN(x)
+            if (op.name=="log") {
+                base <- .load_simple_vector(file, file.path(path, "operations", o, "base"))
+                x <- FUN(x, base=base)
+            } else {
+                x <- FUN(x)
+            }
         } else if (op.name %in% getGroupMembers("Math2")) {
             digits <- .load_simple_vector(file, file.path(path, "operations", o, "digits"))
             x <- FUN(x, digits=digits)
