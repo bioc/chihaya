@@ -8,54 +8,49 @@ package: DelayedArraySaver
 output:
   BiocStyle::html_document
 vignette: >
-  %\VignetteIndexEntry{Format specification}
+  %\VignetteIndexEntry{2. Format specification}
   %\VignetteEngine{knitr::rmarkdown}
   %VignetteEncoding{UTF-8}  
 ---
 
 # Overview
 
-This file describes the layout of a HDF5 file containing delayed operations on an array.
+This document describes the layout of a HDF5 file containing delayed operations on an array.
 The general strategy is to use a hierarchical format where each level stores information about the operation and the "seed" array that it operates on;
 the seed itself can then be another operation, and so on, until all operations are resolved.
 
 # Basic structures
 
-Arrays are stored as HDF5 datasets with the associated type and dimensions.
-
-Vectors are represented by one-dimensional HDF5 datasets with a `_class` attribute set to a length-1 string array containing the `"vector"` string.
-
-Lists are stored as HDF5 groups with no `_class` attribute.
-The group will contain `_length` attribute, which is a length-1 integer array containing the number of elements in the list.
+Lists are stored as HDF5 groups with no `delayed_type` attribute.
+The group will contain `delayed_length` attribute, which is a length-1 integer array containing the number of elements in the list.
 The group elements are named by their positional index from 1 to the total number of elements; indices are allowed to be missing, in which case they are assumed to represent `NULL` or `None` elements.
-The group may also contain a `_names` attribute, which is a 1D array of strings containing the names of the elements.
+The group may also contain a `delayed_names` attribute, which is a 1D array of strings of length equal to `delayed_length`, containing the names of the elements.
 
-Delayed operations are represented by a HDF5 group with a `_class` attribute containing a length-2 string dataset, where the first string is `"operation"` and the second string specifies the category of the operation.
+Delayed operations are represented by a HDF5 group with a `delayed_type` attribute containing a length-2 string dataset, where the first string is `"operation"` and the second string specifies the category of the operation.
 Possible operations are described below.
 
-Seed arrays can either be HDF5 datasets, for ordinary dense arrays;
-or groups with a `_class` attribute containing a length 2 dataset, where the first string is `"seed"` and the second string specifies the class of the seed.
-Possible non-dataset seed array classes are described below.
+Seed arrays are represented by a HDF5 group with a `delayed_type` attribute containing a length-2 string dataset, where the first string is `"seed"` and the second string specifies the class of the seed.
+Possible seed classes are described below.
 
 # Operations
 
 ## Subsetting
 
-For subsetting operations, the second string in `_class` is `"subset"`.
+For subsetting operations, the second string in `delayed_type` is `"subset"`.
 The group contains the following elements:
 
-- `index`, a list of integer vectors.
+- `index`, a list of 1D integer datasets. 
   The list is of length equal to the number of dimensions in the seed array.
-  Each vector contains 1-based indices to subset the seed array in the corresponding dimension.
-  If a vector is missing, no subsetting is to be performed on that dimension.
+  Each dataset can be of variable length and contains (possibly duplicated, possibly unsorted) 1-based indices to subset the seed array in the corresponding dimension.
+  If a list entry is missing, no subsetting is to be performed on that dimension.
 - `seed`, the seed array to be subsetted.
 
 ## Combining 
 
-For combining operations, the second string in `_class` is `"combine"`.
+For combining operations, the second string in `delayed_type` is `"combine"`.
 The group contains the following elements:
 
-- `along`, an integer vector containing the dimension to combine along.
+- `along`, a 1D integer dataset of length 1 containing the dimension to combine along.
   A value of 1 indicates that seed arrays should be combined along rows,
   while a value of 2 indicates that seed arrays should be combined along columns.
 - `seeds`, a list of seed arrays to be combined.
@@ -63,14 +58,14 @@ The group contains the following elements:
 
 ## Stacked unary isometric operations
 
-For stacked unary operations, the second string in `_class` is `"unary isometric stack"`.
+For stacked unary operations, the second string in `delayed_type` is `"unary isometric stack"`.
 The group contains the following elements:
 
 - `seed`, the seed array to be operated on.
   Note that the "unary" in the name of this operation refers to the fact that we are only operating on one seed array.
 - `operations`, a group describing the stack of unary operations to perform.
 Each operation is represented by a group that is named by the execution order, i.e., `1` is performed first, then `2`, and so on.
-Each group in `operations` contains at least `operation`, a length-1 string vector containing the name of the operation to perform.
+Each group in `operations` contains at least `operation`, a 1D string dataset of length 1 containing the name of the operation to perform.
 
 Operations fall into several categories.
 The `Math` category takes no additional arguments and contains the following members, most of whom should be fairly self-explanatory:
@@ -79,7 +74,7 @@ The `Math` category takes no additional arguments and contains the following mem
 getGroupMembers("Math")
 ```
 
-The `Math2` category takes an additional `digits` argument, which is stored as a length-1 integer vector inside the operation's group.
+The `Math2` category takes an additional `digits` argument, which is stored as a 1D integer dataset of length 1 inside the operation's group.
 Members of this category are:
 
 ```{r, echo=FALSE}
@@ -87,8 +82,8 @@ getGroupMembers("Math2")
 ```
 
 Finally, the `Ops` category contain binary operations where one of the arguments is the seed array.
-The `side` dataset is a length-1 string vector specifying which side of the seed array the operation should be applied to, i.e., `"left"` or `"right"`.
-The other argument is held in `value`, a length-1 vector.
+The operation's group contains `side`, a 1D string dataset of length 1 specifying which side of the seed array the operation should be applied to, i.e., `"left"` or `"right"`.
+It also contains `value`, a 1D dataset of length 1 containing the value of the other argument.
 
 ```{r, echo=FALSE}
 c(
@@ -100,103 +95,127 @@ c(
 
 ## Unary isometric operation with arguments
 
-For an unary operation with arguments, the second string in `_class` is `"unary isometric with arguments"`.
+For an unary operation with arguments, the second string in `delayed_type` is `"unary isometric with arguments"`.
 The group contains the following elements:
 
 - `seed`, the seed array to be operated on.
   Note that the "unary" in the name of this operation refers to the fact that we are only operating on one seed array.
-- `operation`, a length-1 string vector containing the name of the operation to perform.
-- `left_arguments`, a list of vectors containing the arguments on the left of the seed array when performing the specified `operation`.
-  Each vector should have length equal to the length of the relevant dimension of the seed array, as specified in `left_along`.
-- `left_along`, an integer vector of the dimensions along which the corresponding vector in `left_arguments` is applied.
-  A value of 1 means that the each entry of the vector is applied to a separate row, while a value of 2 means that each entry is applied to the columns.
-- `right_arguments`, a list of vectors containing the arguments on the right of the seed array when performing the specified `operation`.
-- `right_along`, an integer vector of the dimensions along which the corresponding vector in `right_arguments` is applied.
+- `operation`, a 1D string dataset of length 1 containing the name of the operation to perform.
+- `left_arguments`, a list of 1D datasets containing the arguments on the left of the seed array when performing the specified `operation`.
+  Each dataset should have length equal to the length of the relevant dimension of the seed array, as specified in `left_along`.
+- `left_along`, an 1D integer dataset of length equal to `left_arguments`.
+  Each entry of `left_along` specifies the dimensions along which the corresponding dataset in `left_arguments` is applied.
+  A value of 1 means that the each entry of the corresponding `left_arguments` dataset is applied to a separate row, while a value of 2 means that each entry is applied to the columns.
+- `right_arguments`, a list of 1D datasets containing the arguments on the right of the seed array when performing the specified `operation`.
+- `right_along`, a 1D integer dataset of the dimensions along which the corresponding dataset in `right_arguments` is applied.
 
 Currently supported operations are `+`, `-`, `/`, `*` and `^`.
+All datasets in `*_arguments` are currently expected to be integer or double-precision.
 
 ## Transposition
 
-For transposition, the second string in `_class` is `"transpose"`.
+For transposition, the second string in `delayed_type` is `"transpose"`.
 The group contains the following elements:
 
 - `seed`, the seed array to be transposed.
-- `permutation`, an integer vector of length equal to the number of dimensions.
-  This specifies the permutation of the dimensions - for example, a vector of `c(2, 1)` would represent transposition of a matrix.
+- `permutation`, a 1D integer dataset of length equal to the number of dimensions.
+  This specifies the permutation of the dimensions - for example, a dataset with values of `[2, 1]` would represent transposition of a matrix.
 
 ## Subarray assignment
 
-For subarray assignment, the second string in `_class` is `"subassign"`.
+For subarray assignment, the second string in `delayed_type` is `"subassign"`.
 The group contains the following elements:
 
 - `seed`, the seed array on which to perform the assignment. 
-- `index`, a list of integer vectors containing the indices in which to perform the assignment.
+- `index`, a list of 1D integer datasets containing the indices in which to perform the assignment.
   The list is of length equal to the number of dimensions in the seed array.
-  Each vector contains 1-based indices to define the subarray in the corresponding dimension.
-  If a vector is missing, no subsetting is to be performed on that dimension.
+  Each dataset can be of variable length and contains 1-based indices to define the subarray in the corresponding dimension.
+  If a list entry is missing, no subsetting is to be performed on that dimension.
 - `value`, another seed array containing the replacement values.
   This should have the same dimensions as the subarray specified by `index`.
 
 ## Dimnames
 
-For dimnames replacement, the second string in `_class` is `"dimnames"`.
+For dimnames replacement, the second string in `delayed_type` is `"dimnames"`.
 The group contains the following elements:
 
 - `seed`, the seed array on which to perform the assignment. 
-- `dimnames`, a list of string vectors containing the new dimnames. 
+- `dimnames`, a list of 1D string datasets containing the new dimnames. 
   The list is of length equal to the number of dimensions in the seed array.
-  Each vector is of length equal to the size of the corresponding dimension.
-  If a vector is missing, no dimnames are defined for that dimension.
+  Each dataset is of length equal to the size of the corresponding dimension.
+  If a list entry is missing, no dimnames are defined for that dimension.
 
 ## N-ary isometric operations
 
-For an N-ary isommetric operation, the second string in `_class` is `"n-ary isometric"`.
+For an N-ary isommetric operation, the second string in `delayed_type` is `"n-ary isometric"`.
 The group contains the following elements:
 
 - `seeds`, a list of seed arrays to be operated on.
   All arrays should have the same dimensions.
-- `operation`, a length-1 string vector containing the name of the operation to perform.
+- `operation`, a 1D string dataset of length 1 containing the name of the operation to perform.
 - `right_arguments`, a list of additional arguments to be used in the operation, to the right of all `seeds`.
 
 Currently supported operations are `+`, `-`, `/`, `*` and `^`.
 
-# Non-dataset seeds
+# Seed classes
 
-## Dense HDF5 array
+## Ordinary arrays
 
-For dense HDF5 arrays, the second string in `_class` is `"hdf5 array"`.
+For ordinary arrays, the second string in `delayed_type` is `"array"`.
 This group contains:
 
-- `path`, a length-1 string vector containing the path to the external HDF5 file.
-- `name`, a length-1 string vector containing the name of the dataset inside that file.
+- `data`, a dataset containing the array values.
+- `dimnames` (optional), a list of string datasets containing the dimension names.
+  The list is of length equal to the number of dimensions in the array.
+  Each dataset is of length equal to the size of the corresponding dimension.
+  If a list entry is missing, no dimnames are defined for that dimension.
+
+## Column sparse matrix
+
+For compressed sparse column matrices, the second string in `delayed_type` is `"csparse matrix"`.
+This group contains:
+
+- `data`, a 1D dataset containing the non-zero values.
+- `indices`, a 1D integer dataset of the same length as `data`, containing the row indices of the non-zero values.
+- `indptr`, a 1D integer dataset of length equal to the number of columns plus 1, containing the location on `indices` representing the start of each column.
+
+The orientation is stored in the `h5sparse_format` attribute as `csc-matrix`.
+The shape is stored as a length-2 integer array in the `h5sparse_shape` attribute.
+
+## External HDF5 array
+
+For dense HDF5 arrays, the second string in `delayed_type` is `"external hdf5 array"`.
+This group contains:
+
+- `path`, a 1D string dataset of length 1 containing the path to the external HDF5 file.
+- `name`, a 1D string dataset of length 1 containing the name of the dataset inside that file.
 - `sparse`, a length-1 integer vector to be interpreted as a boolean (0 for false, 1 for true),
   indicating whether the dataset values can be treated as sparse.
 
-## Sparse HDF5 matrix
+## External sparse HDF5 matrix
 
-For sparse HDF5 matrices, the second string in `_class` is `"sparse hdf5 matrix"`.
+For sparse HDF5 matrices, the second string in `delayed_type` is `"external sparse hdf5 matrix"`.
+
 This group contains:
 
-- `path`, a length-1 string vector containing the path to the external HDF5 file.
-- `name`, a length-1 string vector containing the name of the group inside that file.
+- `path`, a 1D string dataset of length 1 containing the path to the external HDF5 file.
+- `name`, a 1D string dataset of length 1 containing the name of the group inside that file.
 
-The referenced group should contain the data, indices and index pointers in compressed sparse column/row format.
-The orientation should be stored as the `h5sparse_format` attribute, a UTF-8-encoded string starting with either `csr` or `csc`.
-The shape should be stored as a length-2 integer vector in the `h5sparse_shape` attribute.
+The referenced group should contain the data, indices and index pointers in compressed sparse column/row format - see Section \@ref(column-sparse-matrix) for an example.
 
-## H5AD matrix
+## External H5AD matrix
 
-For matrices in H5AD files, the second string in `_class` is `"h5ad matrix"`.
+For matrices in H5AD files, the second string in `delayed_type` is `"external h5ad matrix"`.
 This group contains:
 
-- `path`, a length-1 string vector containing the path to the external H5AD file.
-- `layer` (optional), a length-1 string vector specifying the name of the layer of interest.
+- `path`, a 1D string dataset of length 1 containing the path to the external H5AD file.
+- `layer` (optional), a 1D string dataset of length 1 specifying the name of the layer of interest.
   If missing, the matrix is assumed to refer to the main matrix `X`.
 
-## 10X matrix
+## External 10X matrix
 
-For matrices in 10X HDF5 count files, the second string in `_class` is `"tenx matrix"`.
+For matrices in 10X HDF5 count files, the second string in `delayed_type` is `"external tenx matrix"`.
 This group contains:
 
-- `path`, a length-1 string vector containing the path to the external H5AD file.
-- `name`, a length-1 string vector containing the name of the group inside that file.
+- `path`, a 1D string dataset of length 1 containing the path to the external H5AD file.
+- `name`, a 1D string dataset of length 1 containing the name of the group inside that file.
