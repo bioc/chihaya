@@ -26,13 +26,12 @@ setMethod("saveLayer", "DelayedUnaryIsoOpWithArgs", function(x, file, name) {
     if (name!="") {
         h5createGroup(file, name)
     }
-    .label_group_class(file, name, c('operation', 'unary isometric with arguments'))
+    .label_group_class(file, name, c('operation', 'unary isometric'))
 
     # Figuring out the identity of the operation.
     chosen <- NULL
-    possibilities <- list(`+`=`+`, `/`=`/`, `*`=`*`, `-`=`-`, `^`=`^`)
-    for (p in names(possibilities)) {
-        if (identical(x@OP, possibilities[[p]])) {
+    for (p in supported.Ops) {
+        if (identical(x@OP, get(p, envir=baseenv()))) {
             chosen <- p
             break
         }
@@ -42,56 +41,26 @@ setMethod("saveLayer", "DelayedUnaryIsoOpWithArgs", function(x, file, name) {
     }
     h5write(chosen, file, file.path(name, "operation"))
 
-    # Saving the left and right args.
-    for (side in c("left", "right")) {
-        if (side == "left") { 
-            args <- x@Largs
-            along <- x@Lalong
-        } else {
-            args <- x@Rargs
-            along <- x@Ralong
-        }
-        argpath <- file.path(name, paste0(side, "_arguments"))
-        .save_list(args, file, argpath, vectors.only=TRUE) # drops vector attributes, but I don't care.
-        alongpath <- file.path(name, paste0(side, "_along"))
-        h5write(along, file, alongpath)
+    # Saving the left and right args. There should only be one or the other.
+    # as the presence of both is not commutative.
+    if (length(x@Rargs) + length(x@Largs) !=1) {
+        stop("'DelayedUnaryIsoApWithArgs' should operate on exactly one argument")
     }
+
+    left <- length(x@Largs) > 0
+    if (left) {
+        args <- x@Largs[[1]]
+        along <- x@Lalong[1]
+    } else {
+        args <- x@Rargs[[1]]
+        along <- x@Ralong[1]
+    }
+
+    h5createGroup(file, file.path(name, "parameters"))
+    h5write(if (left) "left" else "right", file, file.path(name, "parameters/side"))
+    h5write(along, file, file.path(name, "parameters/along"))
+    h5write(args, file, file.path(name, "parameters/value"))
 
     saveLayer(x@seed, file, file.path(name, "seed"))
     invisible(NULL)
 })
-
-#' @importFrom DelayedArray sweep aperm
-.load_delayed_unary_iso_with_args <- function(file, path, contents) {
-    x <- .dispatch_loader(file, file.path(path, "seed"), contents[["seed"]])
-    if (!is(x, "DelayedArray")) x <- DelayedArray(x)
-
-    OP <- .load_simple_vector(file, file.path(path, "operation"))
-    FUN <- get(OP)
-
-    Lalong <- .load_simple_vector(file, file.path(path, "left_along"))
-    if (length(Lalong) > 1) {
-        stop("multiple left-hand-side operations not supported yet")
-    }
-    Largs <- .load_list(file, file.path(path, "left_arguments"), contents[["left_arguments"]], vectors.only=TRUE)
-    for (i in seq_along(Largs)) {
-        MARGIN <- Lalong[i]
-        if (MARGIN==1) {
-            x <- FUN(Largs[[i]], x)
-        } else {
-            # Stolen from base::sweep.
-            perm <- c(MARGIN, seq_along(dim(x))[-MARGIN])
-            tmp <- aperm(x, perm)
-            tmp <- FUN(Largs[[i]], tmp)
-            x <- aperm(x, order(perm))
-        }
-    }
-
-    Rargs <- .load_list(file, file.path(path, "right_arguments"), contents[["right_arguments"]], vectors.only=TRUE)
-    Ralong <- .load_simple_vector(file, file.path(path, "right_along"))
-    for (i in seq_along(Rargs)) {
-        x <- sweep(x, MARGIN=Ralong[i], STATS=Rargs[[i]], FUN=FUN)
-    }
-
-    x
-}

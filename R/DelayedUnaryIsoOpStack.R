@@ -23,35 +23,49 @@
 #' @rdname DelayedUnaryIsoOpStack
 #' @importFrom rhdf5 h5createGroup h5write
 setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
-    if (name!="") {
-        h5createGroup(file, name)
-    }
-    .label_group_class(file, name, c('operation', 'unary isometric stack'))
-
-    path <- file.path(name, "operations")
-    h5createGroup(file, path)
-
-    for (i in seq_along(x@OPS)) {
+    for (i in rev(seq_along(x@OPS))) { # reverse order, as first operation is first applied (and thus needs to be closer to the leaf of the delayed tree).
         OP <- x@OPS[[i]]
-        ipath <- file.path(path, i)
-        h5createGroup(file, ipath)
+        
+        if (name!="") {
+            h5createGroup(file, name)
+        }
+        .label_group_class(file, name, c('operation', 'unary isometric'))
 
-        info <- NULL
-        if (is.null(info)) {
-            info <- .unary_Math(file, ipath, OP)
+        status <- FALSE 
+        if (!status) {
+            info <- .unary_Math(file, name, OP)
+            if (status <- !is.null(info)) {
+                name <- info
+            }
         } 
-        if (is.null(info)) {
-            info <- .unary_Math2(file, ipath, OP)
+
+        if (!status) {
+            info <- .unary_Math2(file, name, OP)
+            if (status <- !is.null(info)) {
+                name <- info
+            }
         } 
-        if (is.null(info)) {
-            info <- .unary_Ops(file, ipath, OP)
+
+        if (!status) {
+            info <- .unary_Ops(file, name, OP)
+            if (status <- !is.null(info)) {
+                name <- info
+            }
         } 
-        if (is.null(info)) {
+
+        if (!status) {
+            info <- .unary_other(file, name, OP)
+            if (status <- !is.null(info)) {
+                name <- info
+            }
+        } 
+
+        if (!status) {
             stop("unknown OPS[[", i, "]] function in ", class(x))
         }
     }
 
-    saveLayer(x@seed, file, file.path(name, "seed"))
+    saveLayer(x@seed, file, name)
 
     invisible(NULL)
 })
@@ -59,78 +73,160 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
 .unary_Math <- function(file, path, OP) {
     envir <- environment(OP)
     generic <- envir$`.Generic`
+    seed.name <- file.path(path, "seed")
 
     if (!is.null(generic)) {
-        if (generic %in% getGroupMembers("Math")) {
+        direct.support <- c("abs", "sign", "sqrt", "ceiling", "floor", "trunc",
+                            "exp", "expm1", "log1p", "cos", "cosh", "sin",
+                            "sinh", "tan", "tanh", "acos", "acosh", "asin",
+                            "asinh", "atan", "atanh", "gamma", "lgamma",
+                            "digamma", "trigamma")
+
+        if (generic %in% direct.support) {
             h5write(generic, file, file.path(path, "operation"))
-            return(TRUE)
+            h5createGroup(file, seed.name)
+            return(seed.name)
+        }
+
+        log.base.support <- c(log=exp(1), log2=2, log10=10)
+        if (generic %in% names(log.base.support)) {
+            h5write("log", file, file.path(path, "operation"))
+            h5createGroup(file, file.path(path, "parameters"))
+            h5write(log.base.support[[generic]], file, file.path(path, "parameters/base"))
+            return(seed.name)
         }
     }
 
-    # Special case for log.
+    # Special case for the general case log.
     base <- envir$base
     if (isTRUE(all.equal(OP, function(a) log(a, base=base)))) {
         h5write("log", file, file.path(path, "operation"))
-        h5write(base, file, file.path(path, "base"))
-        return(TRUE)
+        h5createGroup(file, file.path(path, "parameters"))
+        h5write(base, file, file.path(path, "parameters/base"))
+        return(seed.name)
     }
 }
 
 .unary_Math2 <- function(file, path, OP) {
     envir <- environment(OP)
     generic <- envir$`.Generic`
+    seed.name <- file.path(path, "seed")
+
     if (generic %in% getGroupMembers("Math2")) {
         h5write(generic, file, file.path(path, "operation"))
-        h5write(envir$digits, file, file.path(path, "digits"))
-        TRUE
+        h5createGroup(file, file.path(path, "parameters"))
+        h5write(envir$digits, file, file.path(path, "parameters/digits"))
+        return(seed.name)
     }
 }
+
+supported.Ops <- c("+", "-", "*", "^", "/", "%%", "%/%", # Arith
+                   "==", ">", "<", "!=", "<=", ">=", # Compare
+                   "&", "|") # Logic
 
 .unary_Ops <- function(file, path, OP) {
     envir <- environment(OP)
     generic <- envir$`.Generic`
-    if (generic %in% getGroupMembers("Arith") || 
-        generic %in% getGroupMembers("Compare") || 
-        generic %in% getGroupMembers("Logic")) 
-    {
+    seed.name <- file.path(path, "seed")
+
+    if (generic %in% supported.Ops) {
         e1 <- envir$e1
         e2 <- envir$e2
-        left <- is(e2, "DelayedArray") # i.e., is the operation applied to the left of the seed?
         h5write(generic, file, file.path(path, "operation"))
-        h5write(if (left) "left" else "right", file, file.path(path, "side"))
-        h5write(if (left) e1 else e2, file, file.path(path, "value"))
-        TRUE
+
+        if (missing(e2)) {
+            if (!generic %in% c("+", "-")) {
+                stop("second argument can only be missing for unary '+' or '-'")
+            }
+            h5createGroup(file, file.path(path, "parameters"))
+            h5write("none", file, file.path(path, "parameters/side"))
+        } else {
+            right <- is(e1, "DelayedArray") # i.e., is the operation applied to the left of the seed?
+            left <- is(e2, "DelayedArray") # i.e., is the operation applied to the left of the seed?
+
+            h5createGroup(file, file.path(path, "parameters"))
+            h5write(if (left) "left" else "right", file, file.path(path, "parameters/side"))
+            h5write(0L, file, file.path(path, "parameters/along"))
+            h5write(if (left) e1 else e2, file, file.path(path, "parameters/value"))
+        }
+
+        return(seed.name)
     }
 }
 
-.load_delayed_unary_iso_stack <- function(file, path, contents) {
+unary.logic.Ops <- c(`!`="!", is.na="is_na", is.infinite="is_infinite", is.nan="is_nan", is.finite="is_finite")
+
+.unary_other <- function(file, path, OP) {
+    envir <- environment(OP)
+    generic <- envir$`.Generic`
+    seed.name <- file.path(path, "seed")
+
+    if (generic %in% names(unary.logic.Ops)) {
+        h5write(unary.logic.Ops[[generic]], file, file.path(path, "operation"))
+        return(seed.name)
+    }
+}
+
+.load_delayed_unary_iso <- function(file, path, contents) {
     x <- .dispatch_loader(file, file.path(path, "seed"), contents[["seed"]])
-    if (!is(x, "DelayedArray")) x <- DelayedArray(x)
+    if (!is(x, "DelayedArray")) {
+        x <- DelayedArray(x)
+    }
 
-    OPS <- names(contents[["operations"]])
-    OPS <- OPS[order(as.integer(OPS))]
+    op.name <- .load_simple_vector(file, file.path(path, "operation"))
 
-    for (o in OPS) {
-        op.name <- .load_simple_vector(file, file.path(path, "operations", o, "operation"))
-        FUN <- get(op.name)
-
-        if (op.name %in% getGroupMembers("Math")) {
-            if (op.name=="log") {
-                base <- .load_simple_vector(file, file.path(path, "operations", o, "base"))
-                x <- FUN(x, base=base)
-            } else {
-                x <- FUN(x)
-            }
-        } else if (op.name %in% getGroupMembers("Math2")) {
-            digits <- .load_simple_vector(file, file.path(path, "operations", o, "digits"))
-            x <- FUN(x, digits=digits)
+    if (op.name %in% getGroupMembers("Math")) {
+        FUN <- get(op.name, envir=baseenv())
+        if (op.name=="log") {
+            base <- .load_simple_vector(file, file.path(path, "parameters", "base"))
+            x <- FUN(x, base=base)
         } else {
-            side <- .load_simple_vector(file, file.path(path, "operations", o, "side"))
-            value <- .load_simple_vector(file, file.path(path, "operations", o, "value"))
-            if (identical(side, "left")) {
-                x <- FUN(value, x)
-            } else if (identical(side, "right")) {
-                x <- FUN(x, value)
+            x <- FUN(x)
+        }
+
+    } else if (op.name %in% getGroupMembers("Math2")) {
+        FUN <- get(op.name, envir=baseenv())
+        digits <- .load_simple_vector(file, file.path(path, "parameters", "digits"))
+        x <- FUN(x, digits=digits)
+
+    } else if (op.name %in% unary.logic.Ops) {
+        actual.op <- names(unary.logic.Ops)[op.name == unary.logic.Ops]
+        FUN <- get(actual.op, envir=baseenv())
+        x <- FUN(x)
+
+    } else {
+        FUN <- get(op.name, envir=baseenv())
+        side <- .load_simple_vector(file, file.path(path, "parameters", "side"))
+
+        if (side == "none") {
+            x <- FUN(x)
+        } else {
+            along <- .load_simple_vector(file, file.path(path, "parameters", "along"))
+            value <- .load_simple_vector(file, file.path(path, "parameters", "value"))
+
+            if (along <= 1L) {
+                if (side == "left") {
+                    x <- FUN(value, x)
+                } else if (side == "right") {
+                    x <- FUN(x, value)
+                } else {
+                    stop("unrecognized side '", side, "'")
+                }
+
+            } else {
+                # Stolen from base::sweep.
+                perm <- c(along, seq_along(dim(x))[-along])
+                tmp <- aperm(x, perm)
+
+                if (side == "left") {
+                    tmp <- FUN(value, tmp)
+                } else if (side == "right") { 
+                    tmp <- FUN(tmp, value)
+                } else {
+                    stop("unrecognized side '", side, "'")
+                }
+
+                x <- aperm(tmp, order(perm))
             }
         }
     }

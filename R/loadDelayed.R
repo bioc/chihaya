@@ -74,8 +74,7 @@ loadDelayed <- function(file, path="delayed") {
                 `n-ary isometric`=.load_delayed_nary_iso,
                 dimnames=.load_delayed_dimnames,
                 subassign=.load_delayed_subassign,
-                `unary isometric stack`=.load_delayed_unary_iso_stack,
-                `unary isometric with arguments`=.load_delayed_unary_iso_with_args
+                `unary isometric`=.load_delayed_unary_iso
             )
             vals <- FUN(file, path, contents)
 

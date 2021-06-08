@@ -31,9 +31,8 @@ setMethod("saveLayer", "DelayedNaryIsoOp", function(x, file, name) {
 
     # Figuring out the identity of the operation.
     chosen <- NULL
-    possibilities <- list(`+`=`+`, `/`=`/`, `*`=`*`, `-`=`-`, `^`=`^`)
-    for (p in names(possibilities)) {
-        if (identical(x@OP, possibilities[[p]])) {
+    for (p in supported.Ops) {
+        if (identical(x@OP, get(p, envir=baseenv()))) {
             chosen <- p
             break
         }
@@ -43,7 +42,13 @@ setMethod("saveLayer", "DelayedNaryIsoOp", function(x, file, name) {
     }
     h5write(chosen, file, file.path(name, "operation"))
 
-    .save_list(x@Rargs, file, file.path(name, "right_arguments"))
+    if (length(x@seeds) != 2) {
+        stop("expected exactly two seeds for 'DelayedNaryIsoOp'")
+    }
+    if (length(x@Rargs)) {
+        stop("expected no additional right arguments for 'DelayedNaryIsoOp'")
+    }
+
     .save_list(x@seeds, file, file.path(name, "seeds"))
     invisible(NULL)
 })
@@ -56,6 +61,5 @@ setMethod("saveLayer", "DelayedNaryIsoOp", function(x, file, name) {
         }
     }
     op <- .load_simple_vector(file, file.path(name, "operation"))
-    Rargs <- .load_list(file, file.path(name, "right_arguments"), contents[["dimnames"]])
-    do.call(get(op), c(seeds, Rargs))
+    do.call(get(op, envir=baseenv()), seeds)
 }

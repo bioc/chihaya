@@ -38,3 +38,14 @@ test_that("DelayedAbind works for 3D arrays", {
     expect_identical(as.array(Z), as.array(roundtrip))
     expect_s4_class(roundtrip@seed, "DelayedNaryIsoOp")
 })
+
+test_that("DelayedNaryIsoOp works with multiple seeds", {
+    AA <- X
+    Z <- (X * Y) * AA
+    temp <- tempfile(fileext=".h5")
+    saveDelayed(Z, temp)
+
+    roundtrip <- loadDelayed(temp)
+    expect_identical(as.matrix(Z), as.matrix(roundtrip))
+    expect_s4_class(roundtrip@seed, "DelayedNaryIsoOp")
+})
