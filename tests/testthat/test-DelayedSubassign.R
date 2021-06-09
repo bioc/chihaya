@@ -9,6 +9,8 @@ test_that("DelayedSubassign works when all indices are supplied", {
     temp <- tempfile(fileext=".h5")
     saveDelayed(X, temp)
 
+    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_type[2], "subassign")
+
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
     expect_true(any(grepl("delayed/index/1", all.paths)))

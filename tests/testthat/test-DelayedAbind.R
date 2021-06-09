@@ -10,6 +10,8 @@ test_that("DelayedAbind works along rows", {
     temp <- tempfile(file=".h5")
     saveDelayed(Z, temp)
 
+    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_type[2], "combine")
+
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
     expect_true(any(grepl("delayed/seeds/1", all.paths)))

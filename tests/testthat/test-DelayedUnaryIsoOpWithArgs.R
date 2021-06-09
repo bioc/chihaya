@@ -9,6 +9,8 @@ test_that("DelayedUnaryIsoOpWithArgs works as expected", {
     temp <- tempfile(fileext=".h5")
     saveDelayed(Z, temp)
 
+    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_type[2], "unary isometric")
+
     expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operation")), "-")
     expect_identical(length(rhdf5::h5read(temp, "delayed/parameters/value")), nrow(X))
     expect_identical(as.vector(rhdf5::h5read(temp, "delayed/parameters/along")), 1L)

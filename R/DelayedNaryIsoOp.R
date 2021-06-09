@@ -27,7 +27,7 @@ setMethod("saveLayer", "DelayedNaryIsoOp", function(x, file, name) {
     if (name!="") {
         h5createGroup(file, name)
     }
-    .label_group_class(file, name, c('operation', 'n-ary isometric'))
+    .label_group_class(file, name, c('operation', 'binary isometric'))
 
     # Figuring out the identity of the operation.
     chosen <- NULL

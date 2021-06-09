@@ -9,7 +9,7 @@ test_that("DelayedSubset works when all indices are supplied", {
     temp <- tempfile(fileext=".h5")
     saveDelayed(Y, temp)
 
-    manifest <- rhdf5::h5ls(temp)
+    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_type[2], "subset")
     expect_identical(as.vector(rhdf5::h5read(temp, "delayed/index/1")), 1:2)
     expect_identical(as.vector(rhdf5::h5read(temp, "delayed/index/2")), 3:5)
 

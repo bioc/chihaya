@@ -10,6 +10,8 @@ test_that("DelayedSetDimnames works as expected (colnames only)", {
     temp <- tempfile(file=".h5")
     saveDelayed(Z, temp)
 
+    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_type[2], "dimnames")
+
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
     expect_false(any(grepl("delayed/dimnames/1", all.paths)))

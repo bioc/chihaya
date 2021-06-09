@@ -9,6 +9,8 @@ test_that("DelayedUnaryIsoOpStack works as expected", {
     temp <- tempfile(fileext=".h5")
     saveDelayed(Z, temp)
 
+    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_type[2], "unary isometric")
+
     expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operation")), "log")
     expect_identical(as.vector(rhdf5::h5read(temp, "delayed/parameters/base")), 2)
     expect_identical(as.vector(rhdf5::h5read(temp, "delayed/seed/operation")), "+")

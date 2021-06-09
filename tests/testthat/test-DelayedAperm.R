@@ -10,6 +10,8 @@ test_that("DelayedAperm works along rows", {
     temp <- tempfile(file=".h5")
     saveDelayed(Z, temp)
 
+    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_type[2], "transpose")
+
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
     expect_true(any(grepl("delayed/seed", all.paths)))
