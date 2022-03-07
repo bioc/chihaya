@@ -4,11 +4,11 @@ author:
 - name: Aaron Lun
   email: infinite.monkeys.with.keyboards@gmail.com
 date: "Revised: 2021-05-02"
-package: DelayedArraySaver
+package: chihaya 
 output:
   BiocStyle::html_document
 vignette: >
-  %\VignetteIndexEntry{1. User guide}
+  %\VignetteIndexEntry{User guide}
   %\VignetteEngine{knitr::rmarkdown}
   %VignetteEncoding{UTF-8}  
 ---
@@ -20,7 +20,7 @@ knitr::opts_chunk$set(error=FALSE, warning=FALSE, message=FALSE)
 
 # Motivation
 
-The `r Biocpkg("DelayedArraySaver")` package saves `DelayedArray` objects for efficient, portable and stable reproduction of delayed operations in a new R session or other programming frameworks.
+The `r Githubpkg("LTLA/chihaya")` package saves `DelayedArray` objects for efficient, portable and stable reproduction of delayed operations in a new R session or other programming frameworks.
 
 - **Portability**.
   We provide a file specification in a standard format (HDF5) that enables other languages to easily interpret and reproduce the delayed operations.
@@ -45,7 +45,7 @@ showtree(x)
 Save it into a HDF5 file with `saveDelayed()`:
 
 ```{r}
-library(DelayedArraySaver)
+library(chihaya)
 tmp <- tempfile(fileext=".h5")
 saveDelayed(x, tmp)
 rhdf5::h5ls(tmp)
@@ -89,12 +89,8 @@ showtree(y)
 We can also store references to external files, thus avoiding data duplication:
 
 ```{r}
-library(DropletTestFiles)
-fname <- getTestFile("tenx-2.0.1-nuclei_900/1.0.0/filtered.h5")
-file.info(fname)[["size"]] # size of the actual file
-
 library(HDF5Array)
-test <- TENxMatrix(fname, "mm10")
+test <- HDF5Array(tmp2, "data")
 stuff <- log2(test + 1)
 stuff
 

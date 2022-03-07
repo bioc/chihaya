@@ -4,7 +4,7 @@
 #' See the \dQuote{Specification} vignette for details on the layout.
 #'
 #' @param x A \linkS4class{DelayedSetDimnames} object.
-#' @inheritParams saveLayer
+#' @inheritParams saveDelayedObject
 #'
 #' @return A \code{NULL}, invisibly.
 #' A group is created at \code{name} containing the contents of the DelayedSetDimnames.
@@ -22,11 +22,9 @@
 #' @export
 #' @rdname DelayedSetDimnames
 #' @importFrom rhdf5 h5createGroup h5write
-setMethod("saveLayer", "DelayedSetDimnames", function(x, file, name) {
-    if (name!="") {
-        h5createGroup(file, name)
-    }
-    .label_group_class(file, name, c('operation', 'dimnames'))
+setMethod("saveDelayedObject", "DelayedSetDimnames", function(x, file, name) {
+    h5createGroup(file, name)
+    .label_group_operation(file, name, 'dimnames')
 
     dimnames <- x@dimnames
     for (i in seq_along(dimnames)) {
@@ -36,14 +34,13 @@ setMethod("saveLayer", "DelayedSetDimnames", function(x, file, name) {
     }
 
     .save_list(dimnames, file, file.path(name, "dimnames"), vectors.only=TRUE)
-    saveLayer(x@seed, file, file.path(name, "seed"))
+    saveDelayedObject(x@seed, file, file.path(name, "seed"))
     invisible(NULL)
 })
 
 .load_delayed_dimnames <- function(file, name, contents) {
-    x <- .dispatch_loader(file, file.path(name, "seed"), contents[["seed"]])
-    if (!is(x, "DelayedArray")) x <- DelayedArray(x)
-    dnames <- .load_list(file, file.path(name, "dimnames"), contents[["dimnames"]], vectors.only=TRUE)
+    x <- .dispatch_loader(file, file.path(name, "seed"))
+    dnames <- .load_list(file, file.path(name, "dimnames"), vectors.only=TRUE)
     dimnames(x) <- dnames
     x
 }

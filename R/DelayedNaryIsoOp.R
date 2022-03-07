@@ -4,7 +4,7 @@
 #' See the \dQuote{Specification} vignette for details on the layout.
 #'
 #' @param x A \linkS4class{DelayedNaryIsoOp} object.
-#' @inheritParams saveLayer
+#' @inheritParams saveDelayedObject
 #' 
 #' @return A \code{NULL}, invisibly.
 #' A group is created at \code{name} containing the contents of the DelayedNaryIsoOp.
@@ -23,11 +23,8 @@
 #' @export
 #' @rdname DelayedNaryIsoOp
 #' @importFrom rhdf5 h5createGroup h5write
-setMethod("saveLayer", "DelayedNaryIsoOp", function(x, file, name) {
-    if (name!="") {
-        h5createGroup(file, name)
-    }
-    .label_group_class(file, name, c('operation', 'binary isometric'))
+setMethod("saveDelayedObject", "DelayedNaryIsoOp", function(x, file, name) {
+    h5createGroup(file, name)
 
     # Figuring out the identity of the operation.
     chosen <- NULL
@@ -40,7 +37,16 @@ setMethod("saveLayer", "DelayedNaryIsoOp", function(x, file, name) {
     if (is.null(chosen)) {
         stop("unknown operation in ", class(x))
     }
-    h5write(chosen, file, file.path(name, "operation"))
+
+    if (chosen %in% supported.Arith) {
+        .label_group_operation(file, name, 'binary arithmetic')
+    } else if (chosen %in% supported.Compare) {
+        .label_group_operation(file, name, 'binary comparison')
+    } else if (chosen %in% supported.Compare) {
+        .label_group_operation(file, name, 'binary logic')
+        chosen <- .save_Ops(chosen)
+    }
+    write_string_scalar(file, name, "method", chosen)
 
     if (length(x@seeds) != 2) {
         stop("expected exactly two seeds for 'DelayedNaryIsoOp'")
@@ -49,17 +55,15 @@ setMethod("saveLayer", "DelayedNaryIsoOp", function(x, file, name) {
         stop("expected no additional right arguments for 'DelayedNaryIsoOp'")
     }
 
-    .save_list(x@seeds, file, file.path(name, "seeds"))
+    saveDelayedObject(x@seeds[[1]], file, file.path(name, "left"))
+    saveDelayedObject(x@seeds[[2]], file, file.path(name, "right"))
     invisible(NULL)
 })
 
 .load_delayed_nary_iso <- function(file, name, contents) {
-    seeds <- .load_list(file, file.path(name, "seeds"), contents[["seeds"]])
-    for (i in seq_along(seeds)) {
-        if (!is(seeds[[i]], "DelayedArray")) {
-            seeds[[i]] <- DelayedArray(seeds[[i]])
-        }
-    }
-    op <- .load_simple_vector(file, file.path(name, "operation"))
-    do.call(get(op, envir=baseenv()), seeds)
+    left <- .dispatch_loader(file, file.path(name, "left"))
+    right <- .dispatch_loader(file, file.path(name, "right"))
+    op <- .load_simple_vector(file, file.path(name, "method"))
+    op <- .load_Ops(op)
+    get(op, envir=baseenv())(left, right)
 }

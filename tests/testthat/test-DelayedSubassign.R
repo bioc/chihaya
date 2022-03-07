@@ -1,5 +1,5 @@
 # This tests the DelayedSubassign saving/loading functionality.
-# library(testthat); library(DelayedArraySaver); source("test-DelayedSubassign.R")
+# library(testthat); library(chihaya); source("test-DelayedSubassign.R")
 
 library(DelayedArray)
 X <- DelayedArray(matrix(runif(100), ncol=20))
@@ -9,12 +9,12 @@ test_that("DelayedSubassign works when all indices are supplied", {
     temp <- tempfile(fileext=".h5")
     saveDelayed(X, temp)
 
-    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_type[2], "subassign")
+    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_operation, "subset assignment")
 
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
+    expect_true(any(grepl("delayed/index/0", all.paths)))
     expect_true(any(grepl("delayed/index/1", all.paths)))
-    expect_true(any(grepl("delayed/index/2", all.paths)))
 
     roundtrip <- loadDelayed(temp)
     expect_identical(as.matrix(X), as.matrix(roundtrip))
@@ -28,8 +28,8 @@ test_that("DelayedSubassign works when only one index is supplied", {
 
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
-    expect_true(any(grepl("delayed/index/1", all.paths)))
-    expect_false(any(grepl("delayed/index/2", all.paths)))
+    expect_true(any(grepl("delayed/index/0", all.paths)))
+    expect_false(any(grepl("delayed/index/1", all.paths)))
 
     roundtrip <- loadDelayed(temp)
     expect_identical(as.matrix(X), as.matrix(roundtrip))
@@ -43,8 +43,8 @@ test_that("DelayedSubassign works when the replacement is a DelayedArray", {
 
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
+    expect_true(any(grepl("delayed/index/0", all.paths)))
     expect_true(any(grepl("delayed/index/1", all.paths)))
-    expect_true(any(grepl("delayed/index/2", all.paths)))
 
     roundtrip <- loadDelayed(temp)
     expect_identical(as.matrix(X), as.matrix(roundtrip))

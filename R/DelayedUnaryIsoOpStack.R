@@ -4,7 +4,7 @@
 #' See the \dQuote{Specification} vignette for details on the layout.
 #'
 #' @param x A \linkS4class{DelayedUnaryIsoOpStack} object.
-#' @inheritParams saveLayer
+#' @inheritParams saveDelayedObject
 #' 
 #' @return A \code{NULL}, invisibly.
 #' A group is created at \code{name} containing the contents of the DelayedUnaryIsoOpStack.
@@ -22,14 +22,10 @@
 #' @export
 #' @rdname DelayedUnaryIsoOpStack
 #' @importFrom rhdf5 h5createGroup h5write
-setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
+setMethod("saveDelayedObject", "DelayedUnaryIsoOpStack", function(x, file, name) {
     for (i in rev(seq_along(x@OPS))) { # reverse order, as first operation is first applied (and thus needs to be closer to the leaf of the delayed tree).
         OP <- x@OPS[[i]]
-        
-        if (name!="") {
-            h5createGroup(file, name)
-        }
-        .label_group_class(file, name, c('operation', 'unary isometric'))
+        h5createGroup(file, name)
 
         status <- FALSE 
         if (!status) {
@@ -65,15 +61,15 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
         }
     }
 
-    saveLayer(x@seed, file, name)
+    saveDelayedObject(x@seed, file, name)
 
     invisible(NULL)
 })
 
-.unary_Math <- function(file, path, OP) {
+.unary_Math <- function(file, name, OP) {
     envir <- environment(OP)
     generic <- envir$`.Generic`
-    seed.name <- file.path(path, "seed")
+    seed.name <- file.path(name, "seed")
 
     if (!is.null(generic)) {
         direct.support <- c("abs", "sign", "sqrt", "ceiling", "floor", "trunc",
@@ -83,110 +79,157 @@ setMethod("saveLayer", "DelayedUnaryIsoOpStack", function(x, file, name) {
                             "digamma", "trigamma")
 
         if (generic %in% direct.support) {
-            h5write(generic, file, file.path(path, "operation"))
-            h5createGroup(file, seed.name)
+            .label_group_operation(file, name, 'unary math')
+            write_string_scalar(file, name, "method", generic)
             return(seed.name)
         }
 
-        log.base.support <- c(log=exp(1), log2=2, log10=10)
+        log.base.support <- c(log2=2, log10=10)
         if (generic %in% names(log.base.support)) {
-            h5write("log", file, file.path(path, "operation"))
-            h5createGroup(file, file.path(path, "parameters"))
-            h5write(log.base.support[[generic]], file, file.path(path, "parameters/base"))
+            .label_group_operation(file, name, 'unary math')
+            write_string_scalar(file, name, "method", "log")
+            write_double_scalar(file, name, "base", log.base.support[[generic]])
             return(seed.name)
         }
     }
 
     # Special case for the general case log.
-    base <- envir$base
-    if (isTRUE(all.equal(OP, function(a) log(a, base=base)))) {
-        h5write("log", file, file.path(path, "operation"))
-        h5createGroup(file, file.path(path, "parameters"))
-        h5write(base, file, file.path(path, "parameters/base"))
+    if (isTRUE(all.equal(as.character(body(OP)), c("log", "a", "base")))) {
+        .label_group_operation(file, name, 'unary math')
+        write_string_scalar(file, name, "method", "log")
+
+        base <- envir$base
+        if (base != exp(1)) {
+            write_double_scalar(file, name, "base", base)
+        }
         return(seed.name)
     }
 }
 
-.unary_Math2 <- function(file, path, OP) {
+.unary_Math2 <- function(file, name, OP) {
     envir <- environment(OP)
     generic <- envir$`.Generic`
-    seed.name <- file.path(path, "seed")
+    seed.name <- file.path(name, "seed")
 
     if (generic %in% getGroupMembers("Math2")) {
-        h5write(generic, file, file.path(path, "operation"))
-        h5createGroup(file, file.path(path, "parameters"))
-        h5write(envir$digits, file, file.path(path, "parameters/digits"))
+        .label_group_operation(file, name, 'unary math')
+        write_string_scalar(file, name, "method", generic)
+        write_integer_scalar(file, name, "digits", envir$digits)
         return(seed.name)
     }
 }
 
-supported.Ops <- c("+", "-", "*", "^", "/", "%%", "%/%", # Arith
-                   "==", ">", "<", "!=", "<=", ">=", # Compare
-                   "&", "|") # Logic
+supported.Arith <- c("+", "-", "*", "^", "/", "%%", "%/%")
+supported.Compare <- c("==", ">", "<", "!=", "<=", ">=")
+supported.Logic <- c("&", "|")
+supported.Ops <- c(supported.Arith, supported.Compare, supported.Logic)
 
-.unary_Ops <- function(file, path, OP) {
+.save_Ops <- function(method) {
+    if (method == "&") {
+        "&&"
+    } else if (method == "|") {
+        "||"
+    } else {
+        method
+    }
+}
+
+.load_Ops <- function(method) {
+    if (method == "&&") {
+        "&"
+    } else if (method == "||") {
+        "|"
+    } else {
+        method
+    }
+}
+
+.unary_Ops <- function(file, name, OP) {
     envir <- environment(OP)
     generic <- envir$`.Generic`
-    seed.name <- file.path(path, "seed")
+    seed.name <- file.path(name, "seed")
 
     if (generic %in% supported.Ops) {
+        delayed_op <- NULL
+        if (generic %in% supported.Arith) {
+            delayed_op <- "unary arithmetic"
+        } else if (generic %in% supported.Compare) {
+            delayed_op <- "unary comparison"
+        } else if (generic %in% supported.Logic) {
+            delayed_op <- "unary logic"
+            generic <- .save_Ops(generic)
+        }
+        .label_group_operation(file, name, delayed_op)
+        write_string_scalar(file, name, "method", generic)
+
         e1 <- envir$e1
         e2 <- envir$e2
-        h5write(generic, file, file.path(path, "operation"))
 
         if (missing(e2)) {
             if (!generic %in% c("+", "-")) {
                 stop("second argument can only be missing for unary '+' or '-'")
             }
-            h5createGroup(file, file.path(path, "parameters"))
-            h5write("none", file, file.path(path, "parameters/side"))
+            write_string_scalar(file, name, "side", "none")
         } else {
             right <- is(e1, "DelayedArray") # i.e., is the operation applied to the left of the seed?
             left <- is(e2, "DelayedArray") # i.e., is the operation applied to the left of the seed?
 
-            h5createGroup(file, file.path(path, "parameters"))
-            h5write(if (left) "left" else "right", file, file.path(path, "parameters/side"))
-            h5write(0L, file, file.path(path, "parameters/along"))
-            h5write(if (left) e1 else e2, file, file.path(path, "parameters/value"))
+            write_string_scalar(file, name, "side", if (left) "left" else "right")
+            val <- if (left) e1 else e2
+            if (length(val) == 1) {
+                write_number_scalar(file, name, "value", val)
+            } else {
+                # Don't think this ever gets called, because otherwise
+                # we'd be dealing with a DelayedIsoOpWithArgs.
+                # Nonetheless, we'll throw in the necessary code.
+                write_integer_scalar(file, name, "along", 0)
+                h5write(val, file, file.path(name, "value"))
+            }
         }
 
         return(seed.name)
     }
 }
 
-unary.logic.Ops <- c(`!`="!", is.na="is_na", is.infinite="is_infinite", is.nan="is_nan", is.finite="is_finite")
+unary.logic.Ops <- c(is.infinite="is_infinite", is.nan="is_nan", is.finite="is_finite")
 
-.unary_other <- function(file, path, OP) {
+.unary_other <- function(file, name, OP) {
     envir <- environment(OP)
     generic <- envir$`.Generic`
-    seed.name <- file.path(path, "seed")
+    seed.name <- file.path(name, "seed")
 
-    if (generic %in% names(unary.logic.Ops)) {
-        h5write(unary.logic.Ops[[generic]], file, file.path(path, "operation"))
+    if (generic == "!") {
+        .label_group_operation(file, name, "unary logic")
+        write_string_scalar(file, name, "method", "!")
+        return(seed.name)
+    } else if (generic %in% names(unary.logic.Ops)) {
+        .label_group_operation(file, name, "unary special check")
+        write_string_scalar(file, name, "method", unary.logic.Ops[[generic]])
         return(seed.name)
     }
 }
 
-.load_delayed_unary_iso <- function(file, path, contents) {
-    x <- .dispatch_loader(file, file.path(path, "seed"), contents[["seed"]])
-    if (!is(x, "DelayedArray")) {
-        x <- DelayedArray(x)
-    }
-
-    op.name <- .load_simple_vector(file, file.path(path, "operation"))
+.load_delayed_unary_iso <- function(file, name, contents) {
+    x <- .dispatch_loader(file, file.path(name, "seed"))
+    op.name <- .load_simple_vector(file, file.path(name, "method"))
+    op.name <- .load_Ops(op.name)
 
     if (op.name %in% getGroupMembers("Math")) {
         FUN <- get(op.name, envir=baseenv())
         if (op.name=="log") {
-            base <- .load_simple_vector(file, file.path(path, "parameters", "base"))
-            x <- FUN(x, base=base)
+            if (h5exists(file, name, "base")){
+                base <- .load_simple_vector(file, file.path(name, "base"))
+                x <- log(x, base=base)
+            } else {
+                x <- log(x)
+            }
         } else {
             x <- FUN(x)
         }
 
     } else if (op.name %in% getGroupMembers("Math2")) {
         FUN <- get(op.name, envir=baseenv())
-        digits <- .load_simple_vector(file, file.path(path, "parameters", "digits"))
+        digits <- .load_simple_vector(file, file.path(name, "digits"))
         x <- FUN(x, digits=digits)
 
     } else if (op.name %in% unary.logic.Ops) {
@@ -194,17 +237,30 @@ unary.logic.Ops <- c(`!`="!", is.na="is_na", is.infinite="is_infinite", is.nan="
         FUN <- get(actual.op, envir=baseenv())
         x <- FUN(x)
 
+    } else if (op.name == "!") {
+        x <- !x
+
     } else {
         FUN <- get(op.name, envir=baseenv())
-        side <- .load_simple_vector(file, file.path(path, "parameters", "side"))
+        side <- .load_simple_vector(file, file.path(name, "side"))
 
         if (side == "none") {
             x <- FUN(x)
         } else {
-            along <- .load_simple_vector(file, file.path(path, "parameters", "along"))
-            value <- .load_simple_vector(file, file.path(path, "parameters", "value"))
+            value <- .load_simple_vector(file, file.path(name, "value"))
+            if (op.name == "&" || op.name == "|") {
+                value <- as.logical(value)
+            }
 
-            if (along <= 1L) {
+            simple <- FALSE
+            if (!h5exists(file, name, "along"))  {
+                simple <- TRUE # i.e., scalar.
+            } else {
+                along <- .load_simple_vector(file, file.path(name, "along"))
+                simple <- along == 0
+            }
+
+            if (simple) {
                 if (side == "left") {
                     x <- FUN(value, x)
                 } else if (side == "right") {

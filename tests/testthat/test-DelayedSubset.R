@@ -1,5 +1,5 @@
 # This tests the DelayedSubset saving/loading functionality.
-# library(testthat); library(DelayedArraySaver); source("test-DelayedSubset.R")
+# library(testthat); library(chihaya); source("test-DelayedSubset.R")
 
 library(DelayedArray)
 X <- DelayedArray(matrix(runif(100), ncol=20))
@@ -9,9 +9,9 @@ test_that("DelayedSubset works when all indices are supplied", {
     temp <- tempfile(fileext=".h5")
     saveDelayed(Y, temp)
 
-    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_type[2], "subset")
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/index/1")), 1:2)
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/index/2")), 3:5)
+    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_operation, "subset")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/index/0")), 1:2 - 1L)
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/index/1")), 3:5 - 1L)
 
     roundtrip <- loadDelayed(temp)
     expect_identical(as.matrix(Y), as.matrix(roundtrip))
@@ -32,8 +32,8 @@ test_that("DelayedSubset works when only one index is supplied", {
 
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
-    expect_true(any(grepl("delayed/index/1", all.paths)))
-    expect_false(any(grepl("delayed/index/2", all.paths)))
+    expect_true(any(grepl("delayed/index/0", all.paths)))
+    expect_false(any(grepl("delayed/index/1", all.paths)))
 
     roundtrip <- loadDelayed(temp)
     expect_identical(as.matrix(Y), as.matrix(roundtrip))

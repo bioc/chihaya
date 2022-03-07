@@ -4,7 +4,7 @@
 #' See the \dQuote{Specification} vignette for details on the layout.
 #' 
 #' @param x A \linkS4class{HDF5ArraySeed} or \linkS4class{H5SparseMatrix} object or subclass thereof.
-#' @inheritParams saveLayer
+#' @inheritParams saveDelayedObject
 #'
 #' @return A \code{NULL}, invisibly.
 #' A group is created at \code{name} containing the contents of the HDF5-based seed.
@@ -23,35 +23,53 @@
 #' @export
 #' @rdname HDF5ArraySeed
 #' @importClassesFrom HDF5Array HDF5ArraySeed
-setMethod("saveLayer", "HDF5ArraySeed", function(x, file, name) {
-    if (name!="") {
-        h5createGroup(file, name)
-    }
-    .label_group_class(file, name, c('seed', 'external hdf5 array'))
+setMethod("saveDelayedObject", "HDF5ArraySeed", function(x, file, name) {
+    h5createGroup(file, name)
+    .label_group_seed(file, name, 'external hdf5 dense array')
 
-    h5write(x@filepath, file, file.path(name, "path"))
-    h5write(x@name, file, file.path(name, "name"))
-    h5write(x@as_sparse, file, file.path(name, "sparse"))
+    h5write(dim(x), file, file.path(name, "dimensions"))
+    write_string_scalar(file, name, "type", .pick_type(x))
+
+    write_string_scalar(file, name, "path", x@filepath)
+    write_string_scalar(file, name, "name", x@name)
+    write_integer_scalar(file, name, "sparse", x@as_sparse)
 
     invisible(NULL)
 })
+
+#' @importFrom DelayedArray type
+.pick_type <- function(x) {
+    ty <- type(x)
+    if (ty == "logical") {
+        "BOOLEAN"
+    } else if (ty == "integer") {
+        "INTEGER"
+    } else if (ty == "double") {
+        "FLOAT"
+    } else if (ty == "character") {
+        "STRING"
+    } else {
+        stop("unrecognized type '", ty, "'")
+    }
+}
 
 #' @importFrom HDF5Array HDF5Array
 .load_dense_hdf5_array <- function(file, name, contents) {
     path <- .load_simple_vector(file, file.path(name, "path"))
     gname <- .load_simple_vector(file, file.path(name, "name"))
     sparse <- .load_simple_vector(file, file.path(name, "sparse"))
-    HDF5Array(path, gname, as.sparse=sparse)
+    HDF5Array(path, gname, as.sparse=sparse > 0)
 }
 
 #' @export
 #' @rdname HDF5ArraySeed
 #' @importClassesFrom HDF5Array H5SparseMatrix
-setMethod("saveLayer", "H5SparseMatrixSeed", function(x, file, name) {
-    if (name!="") {
-        h5createGroup(file, name)
-    }
-    .label_group_class(file, name, c('seed', 'external sparse hdf5 matrix'))
+setMethod("saveDelayedObject", "H5SparseMatrixSeed", function(x, file, name) {
+    h5createGroup(file, name)
+    .label_group_seed(file, name, 'external hdf5 sparse matrix')
+
+    h5write(dim(x), file, file.path(name, "dimensions"))
+    write_string_scalar(file, name, "type", .pick_type(x))
 
     h5write(x@filepath, file, file.path(name, "path"))
     h5write(x@group, file, file.path(name, "name"))
@@ -68,86 +86,4 @@ setMethod("saveLayer", "H5SparseMatrixSeed", function(x, file, name) {
     path <- .load_simple_vector(file, file.path(name, "path"))
     gname <- .load_simple_vector(file, file.path(name, "name"))
     H5SparseMatrix(path, gname)
-}
-
-#' @export
-#' @rdname HDF5ArraySeed
-#' @importClassesFrom HDF5Array TENxMatrixSeed
-setMethod("saveLayer", "TENxMatrixSeed", function(x, file, name) {
-    if (name!="") {
-        h5createGroup(file, name)
-    }
-    .label_group_class(file, name, c('seed', 'external tenx matrix'))
-    h5write(x@filepath, file, file.path(name, "path"))
-    h5write(x@group, file, file.path(name, "name"))
-    invisible(NULL)
-})
-
-#' @importFrom HDF5Array TENxMatrix
-.load_tenx_matrix <- function(file, name, contents) {
-    path <- .load_simple_vector(file, file.path(name, "path"))
-    gname <- .load_simple_vector(file, file.path(name, "name"))
-    TENxMatrix(path, gname)
-}
-
-#' @export
-#' @rdname HDF5ArraySeed
-#' @importClassesFrom HDF5Array Dense_H5ADMatrixSeed
-setMethod("saveLayer", "Dense_H5ADMatrixSeed", function(x, file, name) {
-    if (name!="") {
-        h5createGroup(file, name)
-    }
-    .label_group_class(file, name, c('seed', 'external h5ad matrix'))
-
-    h5write(x@filepath, file, file.path(name, "path"))
-    if (dirname(x@name)=="layers") {
-        h5write(basename(x@name), file, file.path(name, "layer"))
-    }
-
-    invisible(NULL)
-})
-
-#' @export
-#' @rdname HDF5ArraySeed
-#' @importClassesFrom HDF5Array CSR_H5ADMatrixSeed
-setMethod("saveLayer", "CSR_H5ADMatrixSeed", function(x, file, name) {
-    if (name!="") {
-        h5createGroup(file, name)
-    }
-    .label_group_class(file, name, c('seed', 'external h5ad matrix'))
-
-    h5write(x@filepath, file, file.path(name, "path"))
-    if (dirname(x@name)=="layers") {
-        h5write(basename(x@name), file, file.path(name, "layer"))
-    }
-
-    invisible(NULL)
-})
-
-#' @export
-#' @rdname HDF5ArraySeed
-#' @importClassesFrom HDF5Array CSC_H5ADMatrixSeed
-setMethod("saveLayer", "CSC_H5ADMatrixSeed", function(x, file, name) {
-    if (name!="") {
-        h5createGroup(file, name)
-    }
-    .label_group_class(file, name, c('seed', 'external h5ad matrix'))
-
-    h5write(x@filepath, file, file.path(name, "path"))
-    if (dirname(x@name)=="layers") {
-        h5write(basename(x@name), file, file.path(name, "layer"))
-    }
-
-    invisible(NULL)
-})
-
-#' @importFrom HDF5Array H5ADMatrix
-.load_h5ad_matrix <- function(file, name, contents) {
-    path <- .load_simple_vector(file, file.path(name, "path"))
-    if ("layer" %in% names(contents)) {
-        layer <- .load_simple_vector(file, file.path(name, "layer"))
-    } else {
-        layer <- NULL
-    }
-    H5ADMatrix(path, layer=layer)
 }

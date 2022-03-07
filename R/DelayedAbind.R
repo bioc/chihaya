@@ -23,12 +23,10 @@
 #' @export
 #' @rdname DelayedAbind
 #' @importFrom rhdf5 h5createGroup h5write
-setMethod("saveLayer", "DelayedAbind", function(x, file, name) {
-    if (name!="") {
-        h5createGroup(file, name)
-    }
-    .label_group_class(file, name, c('operation', 'combine'))
-    h5write(x@along, file, file.path(name, "along"))
+setMethod("saveDelayedObject", "DelayedAbind", function(x, file, name) {
+    h5createGroup(file, name)
+    .label_group_operation(file, name, 'combine')
+    write_integer_scalar(file, name, "along", x@along - 1L)
     .save_list(x@seeds, file, file.path(name, "seeds"))
     invisible(NULL)
 })
@@ -36,7 +34,7 @@ setMethod("saveLayer", "DelayedAbind", function(x, file, name) {
 #' @import DelayedArray
 .load_delayed_combine <- function(file, name, contents) {
     along <- .load_simple_vector(file, file.path(name, "along"))
-    seeds <- .load_list(file, file.path(name, "seeds"), contents[["seeds"]])
+    seeds <- .load_list(file, file.path(name, "seeds")) 
 
     for (i in seq_along(seeds)) {
         if (!is(seeds[[i]], "DelayedArray")) {
@@ -44,7 +42,7 @@ setMethod("saveLayer", "DelayedAbind", function(x, file, name) {
         }
     }
 
-    if (along==1L) {
+    if (along==0L) {
         do.call(arbind, seeds)
     } else {
         do.call(acbind, seeds)

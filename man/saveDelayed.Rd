@@ -22,7 +22,7 @@ The contents of \code{x} are written to file and a \code{NULL} is invisibly retu
 Save a \linkS4class{DelayedMatrix} object to a location within a HDF5 file.
 }
 \details{
-See the various \code{\link{saveLayer}} methods for how each suite of delayed operations is handled.
+See the various \code{\link{saveDelayedObject}} methods for how each suite of delayed operations is handled.
 Also see the \dQuote{Specification} vignette for details on the layout.
 }
 \examples{

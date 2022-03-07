@@ -1,3 +1,3 @@
-library(DelayedArraySaver)
+library(chihaya)
 library(testthat)
-test_check("DelayedArraySaver")
+test_check("chihaya")

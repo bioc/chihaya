@@ -4,7 +4,7 @@
 #' See the \dQuote{Specification} vignette for details on the layout.
 #'
 #' @param x A \linkS4class{DelayedSubassign} object.
-#' @inheritParams saveLayer
+#' @inheritParams saveDelayedObject
 #' 
 #' @return A \code{NULL}, invisibly.
 #' A group is created at \code{name} containing the contents of the DelayedSubassign.
@@ -22,24 +22,20 @@
 #' @export
 #' @rdname DelayedSubassign
 #' @importFrom rhdf5 h5createGroup h5write
-setMethod("saveLayer", "DelayedSubassign", function(x, file, name) {
-    if (name!="") {
-        h5createGroup(file, name)
-    }
-    .label_group_class(file, name, c('operation', 'subassign'))
+setMethod("saveDelayedObject", "DelayedSubassign", function(x, file, name) {
+    h5createGroup(file, name)
+    .label_group_operation(file, name, 'subset assignment')
     .save_list(x@Lindex, file, file.path(name, "index"), vectors.only=TRUE)
-    saveLayer(x@Rvalue, file, file.path(name, "value"))
-    saveLayer(x@seed, file, file.path(name, "seed"))
+    saveDelayedObject(x@seed, file, file.path(name, "seed"))
+    saveDelayedObject(x@Rvalue, file, file.path(name, "value"))
     invisible(NULL)
 })
 
 .load_delayed_subassign <- function(file, path, contents) {
-    x <- .dispatch_loader(file, file.path(path, "seed"), contents[["seed"]])
-    if (!is(x, "DelayedArray")) x <- DelayedArray(x)
+    x <- .dispatch_loader(file, file.path(path, "seed"))
+    value <- .dispatch_loader(file, file.path(path, "value"))
 
-    index <- .load_list(file, file.path(path, "index"), contents[["index"]], vectors.only=TRUE)
-    value <- .dispatch_loader(file, file.path(path, "value"), contents[["value"]])
-
+    index <- .load_list(file, file.path(path, "index"), vectors.only=TRUE)
     for (i in seq_along(index)) {
         if (is.null(index[[i]])) {
             index[[i]] <- substitute()

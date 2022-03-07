@@ -1,5 +1,5 @@
 # This tests various odds and ends not covered by other tests.
-# library(testthat); library(DelayedArraySaver); source("test-other.R")
+# library(testthat); library(chihaya); source("test-other.R")
 
 library(S4Vectors)
 library(Matrix)
@@ -10,7 +10,7 @@ test_that("saving of an array works correctly", {
     tmp <- tempfile(fileext=".h5")
     saveDelayed(x, tmp)
 
-    arra <- t(rhdf5::h5read(tmp, "delayed/data"))
+    arra <- rhdf5::h5read(tmp, "delayed/data")
     expect_identical(x0, arra)
     out <- loadDelayed(tmp)
     expect_identical(x, out)
@@ -22,8 +22,8 @@ test_that("saving of an array works correctly", {
     tmp <- tempfile(fileext=".h5")
     saveDelayed(x, tmp)
 
-    expect_identical(as.vector(rhdf5::h5read(tmp, "delayed/dimnames/1")), rownames(x))
-    expect_identical(as.vector(rhdf5::h5read(tmp, "delayed/dimnames/2")), colnames(x))
+    expect_identical(as.vector(rhdf5::h5read(tmp, "delayed/dimnames/0")), rownames(x))
+    expect_identical(as.vector(rhdf5::h5read(tmp, "delayed/dimnames/1")), colnames(x))
 
     out <- loadDelayed(tmp)
     expect_identical(x, out)
@@ -48,7 +48,7 @@ test_that("saving of a CsparseMatrix works correctly", {
     # Check that it follows H5SparseMatrix conventions.
     library(HDF5Array)
     stuff <- H5SparseMatrix(tmp, "delayed")
-    expect_identical(unname(as.matrix(t(stuff))), unname(as.matrix(x)))
+    expect_identical(unname(as.matrix(stuff)), unname(as.matrix(x)))
 
     out <- loadDelayed(tmp)
     expect_identical(x, out)

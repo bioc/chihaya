@@ -11,7 +11,7 @@
 #' @return The contents of \code{x} are written to file and a \code{NULL} is invisibly returned.
 #'
 #' @details
-#' See the various \code{\link{saveLayer}} methods for how each suite of delayed operations is handled.
+#' See the various \code{\link{saveDelayedObject}} methods for how each suite of delayed operations is handled.
 #' Also see the \dQuote{Specification} vignette for details on the layout.
 #'
 #' @author Aaron Lun
@@ -34,9 +34,8 @@ saveDelayed <- function(x, file, path="delayed") {
     if (!file.exists(file)) {
         h5createFile(file)
     }
-    saveLayer(x@seed, file, path)
-
-    .label_group(file, path, "delayed-version", "0.99")
-
+    saveDelayedObject(x@seed, file, path)
+    .label_group(file, path, c(delayed_version="0.99"))
+    validate(file, path)
     invisible(NULL)
 }

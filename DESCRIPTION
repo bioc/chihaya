@@ -1,6 +1,7 @@
-Package: DelayedArraySaver
-Title: Save DelayedArrays and their Operations 
-Description: Saves the delayed operations of a DelayedArray to a HDF5 file.
+Package: chihaya
+Title: Save Delayed Operations to a HDF5 File
+Description: 
+    Saves the delayed operations of a DelayedArray to a HDF5 file.
     This enables efficient recovery of the DelayedArray's contents in other languages and analysis frameworks.
 Authors@R: person("Aaron", "Lun", role=c("cre", "aut"), email="infinite.monkeys.with.keyboards@gmail.com") 
 Version: 0.99.1
@@ -12,12 +13,15 @@ Imports:
     methods,
     Matrix,
     rhdf5,
+    Rcpp,
     HDF5Array
 Suggests:
     BiocStyle,
     testthat,
     rmarkdown,
-    knitr,
-    DropletTestFiles
+    knitr
+LinkingTo: 
+    Rcpp,
+    Rhdf5lib
 VignetteBuilder: knitr
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2

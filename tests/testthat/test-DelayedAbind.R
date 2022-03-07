@@ -1,5 +1,5 @@
 # This tests the DelayedAbind saving/loading functionality.
-# library(testthat); library(DelayedArraySaver); source("test-DelayedAbind.R")
+# library(testthat); library(chihaya); source("test-DelayedAbind.R")
 
 library(DelayedArray)
 X <- DelayedArray(matrix(runif(100), ncol=20))
@@ -10,13 +10,13 @@ test_that("DelayedAbind works along rows", {
     temp <- tempfile(file=".h5")
     saveDelayed(Z, temp)
 
-    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_type[2], "combine")
+    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_operation, "combine")
 
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
+    expect_true(any(grepl("delayed/seeds/0", all.paths)))
     expect_true(any(grepl("delayed/seeds/1", all.paths)))
-    expect_true(any(grepl("delayed/seeds/2", all.paths)))
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/along")), 1L)
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/along")), 0L)
 
     roundtrip <- loadDelayed(temp)
     expect_identical(as.matrix(Z), as.matrix(roundtrip))
@@ -31,10 +31,10 @@ test_that("DelayedAbind works along columns", {
 
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
+    expect_true(any(grepl("delayed/seeds/0", all.paths)))
     expect_true(any(grepl("delayed/seeds/1", all.paths)))
     expect_true(any(grepl("delayed/seeds/2", all.paths)))
-    expect_true(any(grepl("delayed/seeds/3", all.paths)))
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/along")), 2L)
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/along")), 1L)
 
     roundtrip <- loadDelayed(temp)
     expect_identical(as.matrix(Z), as.matrix(roundtrip))
@@ -50,9 +50,9 @@ test_that("DelayedAbind works for 3D arrays", {
 
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
+    expect_true(any(grepl("delayed/seeds/0", all.paths)))
     expect_true(any(grepl("delayed/seeds/1", all.paths)))
-    expect_true(any(grepl("delayed/seeds/2", all.paths)))
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/along")), 1L)
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/along")), 0L)
 
     roundtrip <- loadDelayed(temp)
     expect_identical(as.array(Z), as.array(roundtrip))

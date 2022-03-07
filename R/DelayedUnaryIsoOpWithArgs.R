@@ -4,7 +4,7 @@
 #' See the \dQuote{Specification} vignette for details on the layout.
 #'
 #' @param x A \linkS4class{DelayedUnaryIsoOpWithArgs} object.
-#' @inheritParams saveLayer
+#' @inheritParams saveDelayedObject
 #' 
 #' @return A \code{NULL}, invisibly.
 #' A group is created at \code{name} containing the contents of the DelayedUnaryIsoOpWithArgs.
@@ -22,11 +22,10 @@
 #' @export
 #' @rdname DelayedUnaryIsoOpWithArgs
 #' @importFrom rhdf5 h5createGroup h5write
-setMethod("saveLayer", "DelayedUnaryIsoOpWithArgs", function(x, file, name) {
+setMethod("saveDelayedObject", "DelayedUnaryIsoOpWithArgs", function(x, file, name) {
     if (name!="") {
         h5createGroup(file, name)
     }
-    .label_group_class(file, name, c('operation', 'unary isometric'))
 
     # Figuring out the identity of the operation.
     chosen <- NULL
@@ -39,7 +38,15 @@ setMethod("saveLayer", "DelayedUnaryIsoOpWithArgs", function(x, file, name) {
     if (is.null(chosen)) {
         stop("unknown operation in ", class(x))
     }
-    h5write(chosen, file, file.path(name, "operation"))
+    if (chosen %in% supported.Logic) {
+        .label_group_operation(file, name, 'unary logic')
+        chosen <- .save_Ops(chosen)
+    } else if (chosen %in% supported.Compare) {
+        .label_group_operation(file, name, 'unary comparison')
+    } else if (chosen %in% supported.Arith) {
+        .label_group_operation(file, name, 'unary arithmetic')
+    }
+    write_string_scalar(file, name, "method", chosen)
 
     # Saving the left and right args. There should only be one or the other.
     # as the presence of both is not commutative.
@@ -56,11 +63,17 @@ setMethod("saveLayer", "DelayedUnaryIsoOpWithArgs", function(x, file, name) {
         along <- x@Ralong[1]
     }
 
-    h5createGroup(file, file.path(name, "parameters"))
-    h5write(if (left) "left" else "right", file, file.path(name, "parameters/side"))
-    h5write(along, file, file.path(name, "parameters/along"))
-    h5write(args, file, file.path(name, "parameters/value"))
+    write_string_scalar(file, name, "side", if (left) "left" else "right")
+    write_integer_scalar(file, name, "along", along - 1L)
 
-    saveLayer(x@seed, file, file.path(name, "seed"))
+    if (length(args) == 1L) {
+        write_number_scalar(file, name, "value", args)
+    } else if (is.null(dim(args)) || length(dim(args)) == 1L) {
+        h5write(args, file, file.path(name, "value"))
+    } else {
+        stop("multi-dimensional 'value' not supported in 'DelayedUnaryIsoOpWithArgs'")
+    }
+
+    saveDelayedObject(x@seed, file, file.path(name, "seed"))
     invisible(NULL)
 })

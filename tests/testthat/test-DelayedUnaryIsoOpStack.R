@@ -1,5 +1,5 @@
 # This tests the DelayedUnaryIsoOpStack saving/loading functionality.
-# library(testthat); library(DelayedArraySaver); source("test-DelayedUnaryIsoOpStack.R")
+# library(testthat); library(chihaya); source("test-DelayedUnaryIsoOpStack.R")
 
 library(DelayedArray)
 X <- DelayedArray(matrix(runif(100), ncol=20))
@@ -9,16 +9,14 @@ test_that("DelayedUnaryIsoOpStack works as expected", {
     temp <- tempfile(fileext=".h5")
     saveDelayed(Z, temp)
 
-    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_type[2], "unary isometric")
+    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_operation, "unary math")
 
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operation")), "log")
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/parameters/base")), 2)
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/seed/operation")), "+")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/method")), "log")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/base")), 2)
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/seed/method")), "+")
 
-    info.pack <- rhdf5::h5read(temp, "delayed/seed/parameters")
-    expect_identical(as.vector(info.pack$value), 10)
-    expect_identical(as.vector(info.pack$side), "right")
-    expect_identical(as.vector(info.pack$along), 0L)
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/seed/value")), 10)
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/seed/side")), "right")
 
     roundtrip <- loadDelayed(temp)
     expect_identical(as.matrix(Z), as.matrix(roundtrip))
@@ -32,10 +30,9 @@ test_that("DelayedUnaryIsoOpStack works correctly for the Ops side", {
 
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operation")), "/")
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/parameters/side")), "left")
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/parameters/along")), 0L)
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/parameters/value")), 5)
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/method")), "/")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/side")), "left")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/value")), 5)
 
     roundtrip <- loadDelayed(temp)
     expect_identical(as.matrix(Z), as.matrix(roundtrip))
@@ -48,10 +45,9 @@ test_that("DelayedUnaryIsoOpStack works correctly for the Ops side", {
 
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operation")), "-")
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/parameters/side")), "right")
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/parameters/along")), 0L)
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/parameters/value")), 10)
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/method")), "-")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/side")), "right")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/value")), 10)
 
     roundtrip <- loadDelayed(temp)
     expect_identical(as.matrix(Z), as.matrix(roundtrip))
@@ -63,13 +59,43 @@ test_that("DelayedUnaryIsoOpStack works for log", {
     temp <- tempfile(fileext=".h5")
     saveDelayed(Z, temp)
 
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operation")), "log")
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/parameters/base")), exp(1))
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/method")), "log")
 
     # Works with non-default base.
     Z <- log(X, base=3)
     temp <- tempfile(fileext=".h5")
     saveDelayed(Z, temp)
+
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/base")), 3)
+    out <- loadDelayed(temp)
+    expect_equal(Z, out)
+})
+
+test_that("DelayedUnaryIsoOpStack works for logical", {
+    Z <- X > 0.2 & TRUE
+    temp <- tempfile(fileext=".h5")
+    saveDelayed(Z, temp)
+
+    expect_identical(rhdf5::h5readAttributes(temp, "delayed")$delayed_operation, "unary logic")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/method")), "&&")
+    out <- loadDelayed(temp)
+    expect_equal(Z, out)
+
+    # Same for the ||.
+    Z <- X < 0.2 | FALSE
+    temp <- tempfile(fileext=".h5")
+    saveDelayed(Z, temp)
+
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/method")), "||") 
+    out <- loadDelayed(temp)
+    expect_equal(Z, out)
+
+    # Same for !
+    Z <- !X
+    temp <- tempfile(fileext=".h5")
+    saveDelayed(Z, temp)
+
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/method")), "!") 
     out <- loadDelayed(temp)
     expect_equal(Z, out)
 })
@@ -79,8 +105,8 @@ test_that("DelayedUnaryIsoOpStack works for unary arithmetic", {
     temp <- tempfile(fileext=".h5")
     saveDelayed(Z, temp)
 
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operation")), "-")
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/parameters/side")), "none")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/method")), "-")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/side")), "none")
 
     out <- loadDelayed(temp)
     expect_equal(out, Z)
@@ -89,8 +115,8 @@ test_that("DelayedUnaryIsoOpStack works for unary arithmetic", {
     temp <- tempfile(fileext=".h5")
     saveDelayed(Z, temp)
 
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operation")), "+")
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/parameters/side")), "none")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/method")), "+")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/side")), "none")
 
     out <- loadDelayed(temp)
     expect_equal(out, Z)
@@ -101,16 +127,16 @@ test_that("DelayedUnaryIsoOpStack works for other unary operations", {
     temp <- tempfile(fileext=".h5")
     saveDelayed(Z, temp)
 
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operation")), "!")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/method")), "!")
 
     out <- loadDelayed(temp)
     expect_equal(out, Z)
 
     # Trying with something that gets renamed.
-    Z <- is.na(X)
+    Z <- is.nan(X)
     temp <- tempfile(fileext=".h5")
     saveDelayed(Z, temp)
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operation")), "is_na")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/method")), "is_nan")
 
     out <- loadDelayed(temp)
     expect_equal(out, Z)
@@ -123,8 +149,8 @@ test_that("DelayedUnaryIsoOpStack works for Math2", {
 
     manifest <- rhdf5::h5ls(temp)
     all.paths <- file.path(manifest$group, manifest$name)
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/operation")), "round")
-    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/parameters/digits")), 0L)
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/method")), "round")
+    expect_identical(as.vector(rhdf5::h5read(temp, "delayed/digits")), 0L)
 
     roundtrip <- loadDelayed(temp)
     expect_identical(as.matrix(Z), as.matrix(roundtrip))

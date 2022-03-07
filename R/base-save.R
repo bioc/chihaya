@@ -4,7 +4,7 @@
 #' See the \dQuote{Specification} vignette for details on the layout.
 #'
 #' @param x An R object of the indicated class.
-#' @inheritParams saveLayer
+#' @inheritParams saveDelayedObject
 #' 
 #' @return A \code{NULL}, invisibly.
 #' A group is created at \code{name} containing the contents of \code{x}.
@@ -24,84 +24,70 @@
 #' @rdname base-save
 #' @importFrom HDF5Array writeHDF5Array 
 #' @importFrom Matrix t
-setMethod("saveLayer", "array", function(x, file, name) {
-    if (name!="") {
-        h5createGroup(file, name)
-    }
-    .label_group_class(file, name, "array")
+setMethod("saveDelayedObject", "array", function(x, file, name) {
+    h5createGroup(file, name)
 
-    to.save <- .flip_first_and_second(DelayedArray(x))
-    writeHDF5Array(to.save, file, file.path(name, 'data'))
+    .label_group_seed(file, name, "dense array")
+    writeHDF5Array(x, file, file.path(name, 'data'))
+    write_integer_scalar(file, name, "native", 0L)
 
     if (!is.null(dimnames(x))) {
-        # Creating a list and then filling it.
         .save_list(dimnames(x), file, file.path(name, 'dimnames'), vectors.only=TRUE)
     }
 
     invisible(NULL)
 })
 
-# Transposing it to get the right orientation, because rhdf5 will store R's
-# columns as HDF5 rows, which is pretty damn confusing. This ensures that
-# R columns are also stored as HDF5 columns, which makes life easier.
-.flip_first_and_second <- function(x) {
-    perm <- seq_along(dim(x))
-    if (length(perm) > 1) {
-        perm <- c(2L, setdiff(perm, 2L))
-        x <- aperm(x, perm)
-    }
-    x
-}
-
 #' @importFrom Matrix t
 #' @importFrom HDF5Array HDF5Array
 #' @importFrom DelayedArray DelayedArray
 .load_array <- function(file, name, contents) {
     vals <- h5read(file, file.path(name, "data"))
-    vals <- .flip_first_and_second(vals)
-    if ("dimnames" %in% names(contents)) {
-        dimnames(vals) <- .load_list(file, file.path(name, "dimnames"), contents[["dimnames"]], vectors.only=TRUE)
+
+    # If it's native, we need to undo rhdf5's transposition.
+    if (h5read(file, file.path(name, "native"))) { 
+        vals <- aperm(vals, dim(vals):1)
     }
+
+    if (h5exists(file, name, "dimnames")) {
+        dimnames(vals) <- .load_list(file, file.path(name, "dimnames"), vectors.only=TRUE)
+    }
+
     DelayedArray(vals)
 }
 
 #' @export
 #' @rdname base-save
 #' @importFrom DelayedArray DelayedArray
-setMethod("saveLayer", "DelayedArray", function(x, file, name) {
-    saveLayer(x@seed, file, name)
+setMethod("saveDelayedObject", "DelayedArray", function(x, file, name) {
+    saveDelayedObject(x@seed, file, name)
 })
 
 #' @export
 #' @rdname base-save
 #' @importFrom rhdf5 h5createGroup
 #' @importClassesFrom Matrix CsparseMatrix
-setMethod("saveLayer", "CsparseMatrix", function(x, file, name) {
-    if (name!="") {
-        h5createGroup(file, name)
-    }
-    .label_group_class(file, name, c("seed", "csparse matrix"))
-
-    # TODO: convert this into a UTF-8 string. 
-    .label_group(file, name, "h5sparse_format", "csc-matrix")
-    .label_group(file, name, "h5sparse_shape", dim(x))
+setMethod("saveDelayedObject", "CsparseMatrix", function(x, file, name) {
+    h5createGroup(file, name)
+    .label_group_seed(file, name, "sparse matrix")
 
     h5write(x@p, file, file.path(name, "indptr"))
     h5write(x@i, file, file.path(name, "indices"))
     h5write(x@x, file, file.path(name, "data"))
+    h5write(dim(x), file, file.path(name, "shape"))
+
     .save_list(dimnames(x), file, file.path(name, "dimnames"), vectors.only=TRUE)
 })
 
 #' @importFrom Matrix sparseMatrix
 #' @importFrom rhdf5 h5readAttributes
-.load_csparse_matrix <- function(file, name, contents) {
+.load_csparse_matrix <- function(file, name) {
     p <- .load_simple_vector(file, file.path(name, "indptr")) 
     i <- .load_simple_vector(file, file.path(name, "indices"))
     x <- .load_simple_vector(file, file.path(name, "data"))
 
-    attrs <- h5readAttributes(file, name)
-    dims <- as.integer(attrs$h5sparse_shape)
-    dimnames <- .load_list(file, file.path(name, "dimnames"), contents[["dimnames"]], vectors.only=TRUE)
+    dims <- .load_simple_vector(file, file.path(name, "shape"))
+    dimnames <- .load_list(file, file.path(name, "dimnames"), vectors.only=TRUE)
 
     # Avoid inefficiency of sparseMatrix() constructor.
     if (is.double(x)) {
