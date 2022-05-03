@@ -28,6 +28,9 @@ saveDelayed(Z, temp)
 loadDelayed(temp)
 
 }
+\seealso{
+\code{\link{knownOperations}} and \code{\link{knownArrays}}, to modify the loading procedure.
+}
 \author{
 Aaron Lun
 }
