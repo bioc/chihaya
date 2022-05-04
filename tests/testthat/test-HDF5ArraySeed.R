@@ -8,7 +8,7 @@ test_that("HDF5ArraySeeds are saved correctly", {
     temp <- tempfile(fileext=".h5")
     saveDelayed(X, temp)
 
-    expect_identical(as.character(rhdf5::h5read(temp, "delayed/path")), as.character(path(X)))
+    expect_identical(as.character(rhdf5::h5read(temp, "delayed/file")), as.character(path(X)))
 
     out <- loadDelayed(temp)
     expect_identical(X, out)
@@ -24,7 +24,7 @@ test_that("H5SparseMatrixSeeds are saved correctly", {
     temp <- tempfile(fileext=".h5")
     saveDelayed(mat, temp)
 
-    expect_identical(as.character(rhdf5::h5read(temp, "delayed/path")), as.character(path(mat)))
+    expect_identical(as.character(rhdf5::h5read(temp, "delayed/file")), as.character(path(mat)))
 
     out <- loadDelayed(temp)
     expect_identical(out, mat)

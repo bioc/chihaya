@@ -3,21 +3,27 @@
 
 #include "subset.hpp"
 #include "combine.hpp"
-#include "external.hpp"
+#include "transpose.hpp"
+
 #include "dense_array.hpp"
 #include "sparse_matrix.hpp"
-#include "transpose.hpp"
-#include "utils.hpp"
+#include "external_hdf5.hpp"
+#include "custom_array.hpp"
+
 #include "dimnames.hpp"
 #include "subset_assignment.hpp"
+
 #include "unary_arithmetic.hpp"
 #include "unary_comparison.hpp"
 #include "unary_logic.hpp"
 #include "unary_math.hpp"
 #include "unary_special_check.hpp"
+
 #include "binary_arithmetic.hpp"
 #include "binary_comparison.hpp"
 #include "binary_logic.hpp"
+
+#include "utils.hpp"
 
 /**
  * @file validate.hpp
@@ -54,13 +60,14 @@ inline ArrayDetails validate(const H5::Group& handle, const std::string& name) {
             auto atype = load_string_attribute(handle, "delayed_array", " for an array");
 
             // Checking external.
-            const std::string external_prefix = "external ";
-            if (atype.size() > external_prefix.size() && atype.substr(0, external_prefix.size()) == external_prefix) {
-                output = validate_external(handle, name);
-            } else if (atype == "dense array") {
+            if (atype == "dense array") {
                 output = validate_dense_array(handle, name);
             } else if (atype == "sparse matrix") {
                 output = validate_sparse_matrix(handle, name);
+            } else if (atype.rfind("custom ", 0) != std::string::npos) {
+                output = validate_custom_array(handle, name);
+            } else if (atype.rfind("external hdf5 ", 0) != std::string::npos) {
+                output = validate_external_hdf5(handle, name);
             } else {
                 throw std::runtime_error(std::string("unknown array type '") + atype + "' at '" + name + "'");
             }

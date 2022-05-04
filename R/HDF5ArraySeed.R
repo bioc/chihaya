@@ -30,7 +30,7 @@ setMethod("saveDelayedObject", "HDF5ArraySeed", function(x, file, name) {
     h5write(dim(x), file, file.path(name, "dimensions"))
     write_string_scalar(file, name, "type", .pick_type(x))
 
-    write_string_scalar(file, name, "path", x@filepath)
+    write_string_scalar(file, name, "file", x@filepath)
     write_string_scalar(file, name, "name", x@name)
     write_integer_scalar(file, name, "sparse", x@as_sparse)
 
@@ -55,7 +55,7 @@ setMethod("saveDelayedObject", "HDF5ArraySeed", function(x, file, name) {
 
 #' @importFrom HDF5Array HDF5Array
 .load_dense_hdf5_array <- function(file, name, contents) {
-    path <- .load_simple_vector(file, file.path(name, "path"))
+    path <- .load_simple_vector(file, file.path(name, "file"))
     gname <- .load_simple_vector(file, file.path(name, "name"))
     sparse <- .load_simple_vector(file, file.path(name, "sparse"))
     HDF5Array(path, gname, as.sparse=sparse > 0)
@@ -71,8 +71,8 @@ setMethod("saveDelayedObject", "H5SparseMatrixSeed", function(x, file, name) {
     h5write(dim(x), file, file.path(name, "dimensions"))
     write_string_scalar(file, name, "type", .pick_type(x))
 
-    h5write(x@filepath, file, file.path(name, "path"))
-    h5write(x@group, file, file.path(name, "name"))
+    write_string_scalar(file, name, "file", x@filepath)
+    write_string_scalar(file, name, "name", x@group)
 
     if (!is.null(x@subdata)) {
         stop("non-NULL 'subdata' not supported yet")
@@ -83,7 +83,7 @@ setMethod("saveDelayedObject", "H5SparseMatrixSeed", function(x, file, name) {
 
 #' @importFrom HDF5Array H5SparseMatrix
 .load_sparse_hdf5_matrix <- function(file, name, contents) {
-    path <- .load_simple_vector(file, file.path(name, "path"))
+    path <- .load_simple_vector(file, file.path(name, "file"))
     gname <- .load_simple_vector(file, file.path(name, "name"))
     H5SparseMatrix(path, gname)
 }

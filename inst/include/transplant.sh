@@ -11,4 +11,6 @@ else
     git clone https://github.com/LTLA/chihaya source
 fi
 
+rm -rf chihaya
+mkdir chihaya
 cp source/include/chihaya/* chihaya
