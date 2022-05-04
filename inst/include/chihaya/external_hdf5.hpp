@@ -4,7 +4,7 @@
 #include "minimal_array.hpp"
 
 /**
- * @file external_array.hpp
+ * @file external_hdf5.hpp
  *
  * @brief Validation for external arrays.
  */
@@ -23,7 +23,8 @@ namespace chihaya {
  * Each external array is represented as a HDF5 group with the following attributes:
  *
  * - `delayed_type` should be a scalar string `"array"`.
- * - `delayed_array` should be any scalar string that starts with `"external "` (note the space).
+ * - `delayed_array` should be any scalar string that starts with `"external hdf5 "` (note the space).
+ *   Implementations are expected to add their own descriptors to define specific interprations.
  *
  * Inside the group, we expect:
  *
@@ -35,7 +36,10 @@ namespace chihaya {
  *   This may be an absolute or relative path.
  * - `name`, a scalar string containing the name of the dataset or group inside `file` corresponding to the array/matrix. 
  * 
- * This will not check that `file` actually exists with the specified `name` entry.
+ * This function will not check that `file` actually exists with the specified `name` entry.
+ * The structure of the array data at `name` in the external file is also left to the implementation.
+ * Generally, we suggest referring to HDF5 datasets for dense arrays (see `data` in `validate_dense_array()`)
+ * and to HDF5 groups for sparse matrices (see the expected children of `handle` in `validate_sparse_matrix()`).
  */
 inline ArrayDetails validate_external_hdf5(const H5::Group& handle, const std::string& name) {
     auto msg = []() -> std::string { return std::string("an external HDF5 array"); };

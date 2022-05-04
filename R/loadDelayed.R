@@ -69,7 +69,8 @@ known.env$operations <- list(
     `unary comparison`=.load_delayed_unary_iso,
     `unary logic`=.load_delayed_unary_iso,
     `unary math`=.load_delayed_unary_iso,
-    `unary special check`=.load_delayed_unary_iso
+    `unary special check`=.load_delayed_unary_iso,
+    `matrix product`=.load_matrix_product
 )
 
 known.env$arrays <- list(

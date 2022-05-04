@@ -8,11 +8,17 @@
 #' 
 #' @return A \code{NULL}, invisibly.
 #' A group is created at \code{name} containing the contents of \code{x}.
+#'
+#' @details
+#' The ANY method will dispatch to classes that are implemented in other packages:
+#' \itemize{
+#' \item If \code{x} is a LowRankMatrixSeed from the \pkg{BiocSingular} package, it is handled as a delayed matrix product.
+#' }
 #' 
 #' @author Aaron Lun
 #'
 #' @examples
-#' library(HDF5Array)
+#' # Saving a sparse matrix.
 #' X <- rsparsematrix(100, 20, 0.1)
 #' Y <- DelayedArray(X)
 #' temp <- tempfile(fileext=".h5")
@@ -20,6 +26,16 @@
 #' rhdf5::h5ls(temp)
 #' loadDelayed(temp)
 #'
+#' # Saving a matrix product.
+#' library(BiocSingular)
+#' left <- matrix(rnorm(100000), ncol=20)
+#' right <- matrix(rnorm(50000), ncol=20)
+#' thing <- LowRankMatrix(left, right)
+#' temp <- tempfile()
+#' saveDelayed(thing, temp)
+#' rhdf5::h5ls(temp)
+#' loadDelayed(temp)
+#' 
 #' @export
 #' @rdname base-save
 #' @importFrom HDF5Array writeHDF5Array 
@@ -98,4 +114,44 @@ setMethod("saveDelayedObject", "CsparseMatrix", function(x, file, name) {
     out <- new(cls, i=i, p=p, x=x, Dim=dims, Dimnames=dimnames)
 
     DelayedArray(out)
+}
+
+#' @export
+#' @rdname base-save
+#' @importFrom rhdf5 h5createGroup 
+setMethod("saveDelayedObject", "ANY", function(x, file, name) {
+    if (is(x, "LowRankMatrixSeed")) { # From BiocSingular.
+        h5createGroup(file, name)
+        .label_group_operation(file, name, 'matrix product')
+        saveDelayedObject(x@rotation, file, paste0(name, "/left_seed"))
+        write_string_scalar(file, name, "left_orientation", "N");
+        saveDelayedObject(x@components, file, paste0(name, "/right_seed"))
+        write_string_scalar(file, name, "right_orientation", "T");
+    } else {
+        stop("no saveDelayed handler defined for class '", class(x), "'")
+    }
+    invisible(NULL)
+})
+
+#' @importFrom rhdf5 h5read
+#' @importFrom Matrix t
+#' @importClassesFrom Matrix Matrix
+.load_matrix_product <- function(file, name) {
+    L <- .dispatch_loader(file, paste0(name, "/left_seed"))
+    Lori <- h5read(file, paste0(name, "/left_orientation"))
+    if (length(Lori) == 1 && as.character(Lori) == "T") {
+        L <- t(L)
+    } else if (is.matrix(L@seed) || is(L@seed, "Matrix")) {
+        L <- L@seed
+    }
+
+    R <- .dispatch_loader(file, paste0(name, "/right_seed"))
+    Rori <- h5read(file, paste0(name, "/right_orientation"))
+    if (length(Rori) == 1 && as.character(Rori) == "N") {
+        R <- t(R)
+    } else if (is.matrix(R@seed) || is(R@seed, "Matrix")) {
+        R <- R@seed
+    }
+
+    BiocSingular::LowRankMatrix(L, R)
 }

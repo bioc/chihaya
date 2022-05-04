@@ -23,6 +23,7 @@
 #include "binary_comparison.hpp"
 #include "binary_logic.hpp"
 
+#include "matrix_product.hpp"
 #include "utils.hpp"
 
 /**
@@ -107,6 +108,8 @@ inline ArrayDetails validate(const H5::Group& handle, const std::string& name) {
                 output = validate_binary_comparison(handle, name);
             } else if (otype == "binary logic") {
                 output = validate_binary_logic(handle, name);
+            } else if (otype == "matrix product") {
+                output = validate_matrix_product(handle, name);
             } else {
                 throw std::runtime_error(std::string("unknown operation type '") + otype + "' at '" + name + "'");
             }

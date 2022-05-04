@@ -4,6 +4,7 @@
 \alias{saveDelayedObject,array-method}
 \alias{saveDelayedObject,DelayedArray-method}
 \alias{saveDelayedObject,CsparseMatrix-method}
+\alias{saveDelayedObject,ANY-method}
 \title{Saving simple seed classes}
 \usage{
 \S4method{saveDelayedObject}{array}(x, file, name)
@@ -11,6 +12,8 @@
 \S4method{saveDelayedObject}{DelayedArray}(x, file, name)
 
 \S4method{saveDelayedObject}{CsparseMatrix}(x, file, name)
+
+\S4method{saveDelayedObject}{ANY}(x, file, name)
 }
 \arguments{
 \item{x}{An R object of the indicated class.}
@@ -27,12 +30,28 @@ A group is created at \code{name} containing the contents of \code{x}.
 Methods to save simple seed classes into the delayed operation file.
 See the \dQuote{Specification} vignette for details on the layout.
 }
+\details{
+The ANY method will dispatch to classes that are implemented in other packages:
+\itemize{
+\item If \code{x} is a LowRankMatrixSeed from the \pkg{BiocSingular} package, it is handled as a delayed matrix product.
+}
+}
 \examples{
-library(HDF5Array)
+# Saving a sparse matrix.
 X <- rsparsematrix(100, 20, 0.1)
 Y <- DelayedArray(X)
 temp <- tempfile(fileext=".h5")
 saveDelayed(Y, temp)
+rhdf5::h5ls(temp)
+loadDelayed(temp)
+
+# Saving a matrix product.
+library(BiocSingular)
+left <- matrix(rnorm(100000), ncol=20)
+right <- matrix(rnorm(50000), ncol=20)
+thing <- LowRankMatrix(left, right)
+temp <- tempfile()
+saveDelayed(thing, temp)
 rhdf5::h5ls(temp)
 loadDelayed(temp)
 

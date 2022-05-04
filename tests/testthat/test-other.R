@@ -62,3 +62,17 @@ test_that("saving of a CsparseMatrix works correctly", {
     out <- loadDelayed(tmp)
     expect_identical(x, out)
 })
+
+test_that("saving of a LowRankMatrix works correctly", {
+    left <- matrix(rnorm(100000), ncol=20)
+    right <- matrix(rnorm(50000), ncol=20)
+
+    library(BiocSingular)
+    thing <- LowRankMatrix(left, right)
+
+    # Round-trips properly.
+    temp <- tempfile()
+    saveDelayed(thing, temp)
+    out <- loadDelayed(temp)
+    expect_identical(thing, out)
+})
