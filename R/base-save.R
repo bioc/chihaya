@@ -13,6 +13,8 @@
 #' The ANY method will dispatch to classes that are implemented in other packages:
 #' \itemize{
 #' \item If \code{x} is a LowRankMatrixSeed from the \pkg{BiocSingular} package, it is handled as a delayed matrix product.
+#' \item Otherwise, if \code{x} comes from package \pkg{Y}, we will try to load \pkg{chihaya.Y}.
+#' This is assumed to define an appropriate \code{saveDelayedObject} method for \code{x}.
 #' }
 #' 
 #' @author Aaron Lun
@@ -128,7 +130,25 @@ setMethod("saveDelayedObject", "ANY", function(x, file, name) {
         saveDelayedObject(x@components, file, paste0(name, "/right_seed"))
         write_string_scalar(file, name, "right_orientation", "T");
     } else {
-        stop("no saveDelayed handler defined for class '", class(x), "'")
+        pkg <- attr(class(x), "package")
+        failed <- TRUE
+
+        if (!is.null(pkg)) {
+            # Trying again after loading the namespace of the likely
+            # package that contains the saveDelayedObject definition.
+            candidate <- paste0('chihaya.', pkg)
+            if (!isNamespaceLoaded(candidate)) {
+                err <- try(loadNamespace(candidate))
+                if (!is(err, "try-error")) {
+                    saveDelayedObject(x, file, name)
+                    failed <- FALSE
+                }
+            }
+        }
+
+        if (failed) {
+            stop("no saveDelayed handler defined for class '", class(x), "'")
+        }
     }
     invisible(NULL)
 })

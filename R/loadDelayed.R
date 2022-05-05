@@ -34,17 +34,33 @@ loadDelayed <- function(file, path="delayed") {
         vals <- .load_list(file, path)
 
     } else if (identical(attrs$delayed_type, "operation")) {
+        if (startsWith(attrs$delayed_operation, "custom ") && h5exists(file, path, "r_package")) {
+            candidate <- h5read(file, paste0(path, "/r_package"))
+            if (!isNamespaceLoaded(candidate)) {
+                loadNamespace(candidate)
+            }
+        }
+
         FUN <- known.env$operations[[attrs$delayed_operation]]
         if (is.null(FUN)) {
             stop("unknown operation type '", attrs$delayed_operation, "'")
         }
+
         vals <- FUN(file, path)
 
     } else if (identical(attrs$delayed_type, "array")) {
+        if (startsWith(attrs$delayed_array, "custom ") && h5exists(file, path, "r_package")) {
+            candidate <- h5read(file, paste0(path, "/r_package"))
+            if (!isNamespaceLoaded(candidate)) {
+                loadNamespace(candidate)
+            }
+        }
+
         FUN <- known.env$arrays[[attrs$delayed_array]]
         if (is.null(FUN)) {
             stop("unknown array type '", attrs$delayed_array, "'")
         }
+
         vals <- FUN(file, path)
 
     } else {
@@ -98,8 +114,13 @@ known.env$arrays <- list(
 #' The same approach is used for \code{arrays} in \code{customLoadArrays}.
 #'
 #' @details
-#' This function can be used to modify the loading procedure for existing operations/arrays or to add new loaders for new operations/arrays.
-#' For custom operations or arrays, we recommend using a \code{"custom "} prefix in the name to ensure that they do not clash with future additions to the \pkg{chihaya} specification.
+#' This function can be used to modify the loading procedure for existing operations/arrays or to add new loaders for new arrays.
+#'
+#' Custom arrays should use a \code{"custom "} prefix in the name to ensure that they do not clash with future additions to the \pkg{chihaya} specification.
+#' If an instance of a custom array contains an \pkg{r_package} scalar string dataset inside its HDF5 group, the string is assumed to hold the name of the package that implements its loading handler;
+#' if this package is installed, it will be automatically loaded and used by \code{\link{loadDelayed}}.
+#'
+#' Custom operations can be added, but they are not currently supported via \code{\link{validate}}, so it is assumed that such operations will be created outside of \code{\link{saveDelayed}}.
 #'
 #' @author Aaron Lun
 #' @examples

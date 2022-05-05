@@ -28,8 +28,13 @@ Get or set loading functions for operations or arrays that were saved into the H
 This enables third-party packages to modify the \pkg{chihaya} framework for their own purposes.
 }
 \details{
-This function can be used to modify the loading procedure for existing operations/arrays or to add new loaders for new operations/arrays.
-For custom operations or arrays, we recommend using a \code{"custom "} prefix in the name to ensure that they do not clash with future additions to the \pkg{chihaya} specification.
+This function can be used to modify the loading procedure for existing operations/arrays or to add new loaders for new arrays.
+
+Custom arrays should use a \code{"custom "} prefix in the name to ensure that they do not clash with future additions to the \pkg{chihaya} specification.
+If an instance of a custom array contains an \pkg{r_package} scalar string dataset inside its HDF5 group, the string is assumed to hold the name of the package that implements its loading handler;
+if this package is installed, it will be automatically loaded and used by \code{\link{loadDelayed}}.
+
+Custom operations can be added, but they are not currently supported via \code{\link{validate}}, so it is assumed that such operations will be created outside of \code{\link{saveDelayed}}.
 }
 \examples{
 library(HDF5Array)
