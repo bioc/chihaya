@@ -1,7 +1,7 @@
 #' Saving a DelayedSubset
 #'
 #' Save a \linkS4class{DelayedSubset} object into a HDF5 file.
-#' See the \dQuote{Specification} vignette for details on the layout.
+#' See the \dQuote{Subsetting} operation at \url{https://ltla.github.io/chihaya} for more details.
 #'
 #' @param x A \linkS4class{DelayedSubset} object.
 #' @inheritParams saveDelayedObject

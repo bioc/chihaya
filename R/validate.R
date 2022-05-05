@@ -2,6 +2,7 @@
 #'
 #' Validate the delayed objects inside a HDF5 file.
 #' This is automatically run at the end of every \code{\link{saveDelayed}} call to check the integrity of the saved files.
+#' See \url{https://ltla.github.io/chihaya} for more details.
 #'
 #' @param path String containing the path to the HDF5 file.
 #' @param name String containing the name of the delayed object inside the file.

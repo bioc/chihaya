@@ -22,7 +22,7 @@ A group is created at \code{name} containing the contents of the HDF5-based seed
 }
 \description{
 Save \linkS4class{HDF5ArraySeed} or \linkS4class{H5SparseMatrix} objects or their subclasses.
-See the \dQuote{Specification} vignette for details on the layout.
+See \dQuote{External HDF5 arrays} at \url{https://ltla.github.io/chihaya} for more details.
 }
 \examples{
 library(HDF5Array)

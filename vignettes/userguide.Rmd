@@ -29,6 +29,8 @@ The `r Githubpkg("LTLA/chihaya")` package saves `DelayedArray` objects for effic
 - **Efficiency**. 
   We avoid any realization of the delayed operations, enabling quick saving and avoiding loss of data structure in the seed (e.g., sparsity).
 
+Check out the [specification](https://ltla.github.io/chihaya) for more details.
+
 # Quick start
 
 Make a `DelayedArray` object with some operations:

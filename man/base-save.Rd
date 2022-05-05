@@ -28,7 +28,7 @@ A group is created at \code{name} containing the contents of \code{x}.
 }
 \description{
 Methods to save simple seed classes into the delayed operation file.
-See the \dQuote{Specification} vignette for details on the layout.
+See \dQuote{Dense arrays} and \dQuote{Sparse matrices} at \url{https://ltla.github.io/chihaya} for more details.
 }
 \details{
 The ANY method will dispatch to classes that are implemented in other packages:

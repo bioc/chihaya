@@ -19,7 +19,7 @@ A group is created at \code{name} containing the contents of the DelayedUnaryIso
 }
 \description{
 Save a \linkS4class{DelayedUnaryIsoOpStack} object into a HDF5 file.
-See the \dQuote{Specification} vignette for details on the layout.
+See the \dQuote{Unary ...} operations at \url{https://ltla.github.io/chihaya} for more details.
 }
 \examples{
 X <- DelayedArray(matrix(runif(100), ncol=20))

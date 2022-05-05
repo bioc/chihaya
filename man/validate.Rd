@@ -17,6 +17,7 @@ validate(path, name)
 \description{
 Validate the delayed objects inside a HDF5 file.
 This is automatically run at the end of every \code{\link{saveDelayed}} call to check the integrity of the saved files.
+See \url{https://ltla.github.io/chihaya} for more details.
 }
 \seealso{
 See \url{https://ltla.github.io/chihaya} for the specification.

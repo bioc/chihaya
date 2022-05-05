@@ -1,7 +1,7 @@
 #' Saving a DelayedNaryIsoOp
 #'
 #' Save a \linkS4class{DelayedNaryIsoOp} object into a HDF5 file.
-#' See the \dQuote{Specification} vignette for details on the layout.
+#' See the \dQuote{Binary ...} operations at \url{https://ltla.github.io/chihaya} for more details.
 #'
 #' @param x A \linkS4class{DelayedNaryIsoOp} object.
 #' @inheritParams saveDelayedObject

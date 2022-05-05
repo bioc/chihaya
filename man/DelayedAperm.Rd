@@ -19,7 +19,7 @@ A group is created at \code{name} containing the contents of the DelayedAperm.
 }
 \description{
 Save a \linkS4class{DelayedAperm} object.
-See the \dQuote{Specification} vignette for details on the layout.
+See the \dQuote{Transposition} operation at \url{https://ltla.github.io/chihaya} for more details.
 }
 \examples{
 X <- DelayedArray(matrix(runif(100), ncol=20))

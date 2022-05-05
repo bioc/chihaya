@@ -1,7 +1,7 @@
 #' Saving a DelayedAbind
 #'
 #' Save a \linkS4class{DelayedAbind} object.
-#' See the \dQuote{Specification} vignette for details on the layout.
+#' See the \dQuote{Combining} operation at \url{https://ltla.github.io/chihaya} for more details.
 #'
 #' @param x A \linkS4class{DelayedAbind} object.
 #' @param file String containing the path to a HDF5 file.

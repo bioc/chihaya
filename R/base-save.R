@@ -1,7 +1,7 @@
 #' Saving simple seed classes
 #'
 #' Methods to save simple seed classes into the delayed operation file.
-#' See the \dQuote{Specification} vignette for details on the layout.
+#' See \dQuote{Dense arrays} and \dQuote{Sparse matrices} at \url{https://ltla.github.io/chihaya} for more details.
 #'
 #' @param x An R object of the indicated class.
 #' @inheritParams saveDelayedObject
