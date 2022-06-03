@@ -10,6 +10,16 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// get_best_type
+std::string get_best_type(Rcpp::NumericVector values);
+RcppExport SEXP _chihaya_get_best_type(SEXP valuesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type values(valuesSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_best_type(values));
+    return rcpp_result_gen;
+END_RCPP
+}
 // h5exists
 bool h5exists(std::string path, std::string host, std::string name);
 RcppExport SEXP _chihaya_h5exists(SEXP pathSEXP, SEXP hostSEXP, SEXP nameSEXP) {
@@ -74,6 +84,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_chihaya_get_best_type", (DL_FUNC) &_chihaya_get_best_type, 1},
     {"_chihaya_h5exists", (DL_FUNC) &_chihaya_h5exists, 3},
     {"_chihaya_validate_", (DL_FUNC) &_chihaya_validate_, 2},
     {"_chihaya_write_integer_scalar", (DL_FUNC) &_chihaya_write_integer_scalar, 4},

@@ -63,6 +63,53 @@ test_that("saving of a CsparseMatrix works correctly", {
     expect_identical(x, out)
 })
 
+test_that("saving of a CsparseMatrix works correctly with integers", {
+    x0 <- round(rsparsematrix(20, 10, 0.1) * 10)
+    x <- DelayedArray(x0)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+
+    library(HDF5Array)
+    stuff <- H5SparseMatrix(tmp, "delayed")
+    expect_identical(type(stuff), "integer")
+    expect_equal(unname(as.matrix(stuff)), unname(as.matrix(x)))
+
+    out <- loadDelayed(tmp)
+    expect_identical(x, out)
+
+    # Trying with larger integers.
+    x <- DelayedArray(x0 * 10000)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+    out <- loadDelayed(tmp)
+    expect_identical(x, out)
+})
+
+test_that("saving of a CsparseMatrix works correctly with logicals", {
+    x0 <- rsparsematrix(20, 10, 0.1) != 0
+    x <- DelayedArray(x0)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+
+    library(HDF5Array)
+    stuff <- H5SparseMatrix(tmp, "delayed")
+    expect_identical(type(stuff), "logical")
+
+    out <- loadDelayed(tmp)
+    expect_identical(x, out)
+})
+
+test_that("type chooser works correctly", {
+    expect_identical(chihaya:::get_best_type(c(1.2, 2.3)), "H5T_NATIVE_DOUBLE")
+    expect_identical(chihaya:::get_best_type(c(1, 2)), "H5T_NATIVE_USHORT")
+    expect_identical(chihaya:::get_best_type(c(-1, 2)), "H5T_NATIVE_SHORT")
+    expect_identical(chihaya:::get_best_type(c(100000)), "H5T_NATIVE_UINT")
+    expect_identical(chihaya:::get_best_type(c(-100000)), "H5T_NATIVE_INT")
+    expect_identical(chihaya:::get_best_type(numeric(0)), "H5T_NATIVE_USHORT")
+    expect_identical(chihaya:::get_best_type(c(5e9)), "H5T_NATIVE_ULONG")
+    expect_identical(chihaya:::get_best_type(c(-5e9)), "H5T_NATIVE_LONG")
+})
+
 test_that("saving of a LowRankMatrix works correctly", {
     left <- matrix(rnorm(100000), ncol=20)
     right <- matrix(rnorm(50000), ncol=20)
