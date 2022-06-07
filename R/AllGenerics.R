@@ -12,7 +12,9 @@
 #'
 #' @details
 #' The \code{\link{saveDelayedObject}} generic is intended for developers to create methods for new operations.
-#' End-users should use the \code{\link{saveDelayed}} function instead.#'
+#' End-users should use the \code{\link{saveDelayed}} function instead.
+#'
+#' The \linkS4class{DelayedArray} method will simply extract the seed and use it to call \code{\link{saveDelayedObject}} again.
 #'
 #' @export
 #' @import methods

@@ -1,33 +1,27 @@
-#' Saving simple seed classes
+#' Saving other seed classes
 #'
-#' Methods to save simple seed classes into the delayed operation file.
-#' See \dQuote{Dense arrays} and \dQuote{Sparse matrices} at \url{https://ltla.github.io/chihaya} for more details.
+#' Optional methods to save other classes, depending on the availability of the packages in the current R installation.
 #'
-#' @param x An R object of the indicated class.
+#' @param x An R object of a supported class, see Details.
 #' @inheritParams saveDelayedObject
-#' 
-#' @return A \code{NULL}, invisibly.
-#' A group is created at \code{name} containing the contents of \code{x}.
 #'
 #' @details
 #' The ANY method will dispatch to classes that are implemented in other packages:
 #' \itemize{
 #' \item If \code{x} is a LowRankMatrixSeed from the \pkg{BiocSingular} package, it is handled as a delayed matrix product.
+#' \item If \code{x} is a ResidualMatrixSeed from the \pkg{ResidualMatrix} package, it is converted into the corresponding series of delayed operations.
+#' However, the top-level group will contain a \code{"r_type_hint"} dataset to indicate that it was originally a ResidualMatrix object.
+#' This provides R clients with the opportunity to reload it as a ResidualMatrix, which may be more efficient than the naive DelayedArray representation.
 #' \item Otherwise, if \code{x} comes from package \pkg{Y}, we will try to load \pkg{chihaya.Y}.
 #' This is assumed to define an appropriate \code{saveDelayedObject} method for \code{x}.
 #' }
 #' 
+#' @return A \code{NULL}, invisibly.
+#' A group is created at \code{name} containing the contents of \code{x}.
+#'
 #' @author Aaron Lun
 #'
 #' @examples
-#' # Saving a sparse matrix.
-#' X <- rsparsematrix(100, 20, 0.1)
-#' Y <- DelayedArray(X)
-#' temp <- tempfile(fileext=".h5")
-#' saveDelayed(Y, temp)
-#' rhdf5::h5ls(temp)
-#' loadDelayed(temp)
-#'
 #' # Saving a matrix product.
 #' library(BiocSingular)
 #' left <- matrix(rnorm(100000), ncol=20)
@@ -37,110 +31,9 @@
 #' saveDelayed(thing, temp)
 #' rhdf5::h5ls(temp)
 #' loadDelayed(temp)
-#' 
+#'
 #' @export
-#' @rdname base-save
-#' @importFrom HDF5Array writeHDF5Array 
-#' @importFrom Matrix t
-setMethod("saveDelayedObject", "array", function(x, file, name) {
-    h5createGroup(file, name)
-
-    .label_group_seed(file, name, "dense array")
-    writeHDF5Array(x, file, file.path(name, 'data'))
-    write_integer_scalar(file, name, "native", 0L)
-
-    if (!is.null(dimnames(x))) {
-        .save_list(dimnames(x), file, file.path(name, 'dimnames'), vectors.only=TRUE)
-    }
-
-    invisible(NULL)
-})
-
-#' @importFrom Matrix t
-#' @importFrom HDF5Array HDF5Array
-#' @importFrom DelayedArray DelayedArray
-.load_array <- function(file, name, contents) {
-    vals <- h5read(file, file.path(name, "data"))
-
-    # If it's native, we need to undo rhdf5's transposition.
-    if (h5read(file, file.path(name, "native"))) { 
-        vals <- aperm(vals, dim(vals):1)
-    }
-
-    if (h5exists(file, name, "dimnames")) {
-        dimnames(vals) <- .load_list(file, file.path(name, "dimnames"), vectors.only=TRUE)
-    }
-
-    vals
-}
-
-#' @export
-#' @rdname base-save
-#' @importFrom DelayedArray DelayedArray
-setMethod("saveDelayedObject", "DelayedArray", function(x, file, name) {
-    saveDelayedObject(x@seed, file, name)
-})
-
-#' @export
-#' @rdname base-save
-#' @importFrom rhdf5 h5createGroup h5createDataset h5write
-#' @importClassesFrom Matrix CsparseMatrix
-setMethod("saveDelayedObject", "CsparseMatrix", function(x, file, name) {
-    h5createGroup(file, name)
-    .label_group_seed(file, name, "sparse matrix")
-
-    # Choosing the most efficient representation where possible.
-    if (!is.logical(x@x)) {
-        xstore <- get_best_type(x@x)
-    } else {
-        xstore <- "H5T_NATIVE_UCHAR"
-    }
-    dname <- file.path(name, "data")
-    h5createDataset(file, dname, dims=length(x@x), H5type=xstore, storage.mode=typeof(x@x), chunk=min(length(x@x), 200000));
-    h5write(x@x, file, dname)
-
-    if (nrow(x) < 2^16) {
-        istore <- "H5T_NATIVE_USHORT"
-    } else {
-        istore <- "H5T_NATIVE_UINT"
-    }
-    iname <- file.path(name, "indices")
-    h5createDataset(file, iname, dims=length(x@i), H5type=istore, chunk=min(length(x@i), 200000));
-    h5write(x@i, file, iname)
-
-    # Also chunking the indptrs, in case you just want to fetch specific columns.
-    pname <- file.path(name, "indptr")
-    h5createDataset(file, pname, dims=length(x@p), H5type="H5T_NATIVE_ULONG", chunk=min(length(x@p), 5000));
-    h5write(x@p, file, pname)
-
-    h5write(dim(x), file, file.path(name, "shape"))
-
-    .save_list(dimnames(x), file, file.path(name, "dimnames"), vectors.only=TRUE)
-})
-
-#' @importFrom Matrix sparseMatrix
-#' @importFrom rhdf5 h5readAttributes
-.load_csparse_matrix <- function(file, name) {
-    p <- .load_simple_vector(file, file.path(name, "indptr")) 
-    i <- .load_simple_vector(file, file.path(name, "indices"))
-    x <- .load_simple_vector(file, file.path(name, "data"))
-
-    dims <- .load_simple_vector(file, file.path(name, "shape"))
-    dimnames <- .load_list(file, file.path(name, "dimnames"), vectors.only=TRUE)
-
-    # Avoid inefficiency of sparseMatrix() constructor.
-    if (is.logical(x)) {
-        cls <- "lgCMatrix"
-    } else {
-        cls <- "dgCMatrix"
-        x <- as.double(x)
-    }
-
-    new(cls, i=i, p=p, x=x, Dim=dims, Dimnames=dimnames)
-}
-
-#' @export
-#' @rdname base-save
+#' @rdname other
 #' @importFrom rhdf5 h5createGroup 
 setMethod("saveDelayedObject", "ANY", function(x, file, name) {
     if (is(x, "LowRankMatrixSeed")) { # From BiocSingular.
