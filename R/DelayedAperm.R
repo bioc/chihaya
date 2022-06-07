@@ -30,9 +30,13 @@ setMethod("saveDelayedObject", "DelayedAperm", function(x, file, name) {
     invisible(NULL)
 })
 
+#' @import DelayedArray
 .load_delayed_aperm <- function(file, name, contents) {
     x <- .dispatch_loader(file, file.path(name, "seed"))
+    if (!is(x, "DelayedArray")) {
+        x <- DelayedArray(x)
+    }
+
     perm <- .load_simple_vector(file, file.path(name, "permutation"))
-    if (!is(x, "DelayedArray")) x <- DelayedArray(x)
     aperm(x, perm + 1L)
 }

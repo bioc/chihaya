@@ -31,8 +31,13 @@ setMethod("saveDelayedObject", "DelayedSubassign", function(x, file, name) {
     invisible(NULL)
 })
 
+#' @import DelayedArray
 .load_delayed_subassign <- function(file, path, contents) {
     x <- .dispatch_loader(file, file.path(path, "seed"))
+    if (!is(x, "DelayedArray")) {
+        x <- DelayedArray(x)
+    }
+
     value <- .dispatch_loader(file, file.path(path, "value"))
 
     index <- .load_list(file, file.path(path, "index"), vectors.only=TRUE)

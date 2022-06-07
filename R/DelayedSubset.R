@@ -40,6 +40,9 @@ setMethod("saveDelayedObject", "DelayedSubset", function(x, file, name) {
 
 .load_delayed_subset <- function(file, name, contents) {
     x <- .dispatch_loader(file, file.path(name, "seed"))
+    if (!is(x, "DelayedArray")) {
+        x <- DelayedArray(x)
+    }
 
     indices <- .load_list(file, file.path(name, "index"), vectors.only=TRUE)
     for (i in seq_along(indices)) {

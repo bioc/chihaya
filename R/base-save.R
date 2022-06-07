@@ -71,7 +71,7 @@ setMethod("saveDelayedObject", "array", function(x, file, name) {
         dimnames(vals) <- .load_list(file, file.path(name, "dimnames"), vectors.only=TRUE)
     }
 
-    DelayedArray(vals)
+    vals
 }
 
 #' @export
@@ -135,9 +135,8 @@ setMethod("saveDelayedObject", "CsparseMatrix", function(x, file, name) {
         cls <- "dgCMatrix"
         x <- as.double(x)
     }
-    out <- new(cls, i=i, p=p, x=x, Dim=dims, Dimnames=dimnames)
 
-    DelayedArray(out)
+    new(cls, i=i, p=p, x=x, Dim=dims, Dimnames=dimnames)
 }
 
 #' @export
@@ -210,17 +209,13 @@ setMethod("saveDelayedObject", "ANY", function(x, file, name) {
     Lori <- h5read(file, paste0(name, "/left_orientation"))
     if (length(Lori) == 1 && as.character(Lori) == "T") {
         L <- t(L)
-    } else if (is.matrix(L@seed) || is(L@seed, "Matrix")) {
-        L <- L@seed
-    }
+    } 
 
     R <- .dispatch_loader(file, paste0(name, "/right_seed"))
     Rori <- h5read(file, paste0(name, "/right_orientation"))
     if (length(Rori) == 1 && as.character(Rori) == "N") {
         R <- t(R)
-    } else if (is.matrix(R@seed) || is(R@seed, "Matrix")) {
-        R <- R@seed
-    }
+    } 
 
     BiocSingular::LowRankMatrix(L, R)
 }
@@ -239,14 +234,12 @@ setMethod("saveDelayedObject", "ANY", function(x, file, name) {
     }
 
     .matrix <- .dispatch_loader(file, paste0(name, "/left"))
-    .matrix <- .matrix@seed # TODO: fix this in ResidualMatrix so that subtraction works for arbitrary DelayedMatrix objects.
-
     Q <- .dispatch_loader(file, paste0(name, "/right/left_seed"))
     Qty <- .dispatch_loader(file, paste0(name, "/right/right_seed"))
 
     if (!isNamespaceLoaded("ResidualMatrix")) {
         loadNamespace("ResidualMatrix")
     }
-    seed <- new("ResidualMatrixSeed", .matrix = .matrix, Q = as.matrix(Q), Qty = as.matrix(Qty), transposed = transposed)
+    seed <- new("ResidualMatrixSeed", .matrix = .matrix, Q = Q, Qty = Qty, transposed = transposed)
     DelayedArray(seed)
 }

@@ -209,8 +209,13 @@ unary.logic.Ops <- c(is.infinite="is_infinite", is.nan="is_nan", is.finite="is_f
     }
 }
 
+#' @import DelayedArray
 .load_delayed_unary_iso <- function(file, name, contents) {
     x <- .dispatch_loader(file, file.path(name, "seed"))
+    if (!is(x, "DelayedArray")) {
+        x <- DelayedArray(x)
+    }
+
     op.name <- .load_simple_vector(file, file.path(name, "method"))
     op.name <- .load_Ops(op.name)
 

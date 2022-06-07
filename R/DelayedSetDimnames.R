@@ -38,8 +38,13 @@ setMethod("saveDelayedObject", "DelayedSetDimnames", function(x, file, name) {
     invisible(NULL)
 })
 
+#' @import DelayedArray
 .load_delayed_dimnames <- function(file, name, contents) {
     x <- .dispatch_loader(file, file.path(name, "seed"))
+    if (!is(x, "DelayedArray")) {
+        x <- DelayedArray(x)
+    }
+
     dnames <- .load_list(file, file.path(name, "dimnames"), vectors.only=TRUE)
     dimnames(x) <- dnames
     x

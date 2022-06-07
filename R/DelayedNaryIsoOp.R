@@ -60,9 +60,18 @@ setMethod("saveDelayedObject", "DelayedNaryIsoOp", function(x, file, name) {
     invisible(NULL)
 })
 
+#' @import DelayedArray
 .load_delayed_nary_iso <- function(file, name, contents) {
     left <- .dispatch_loader(file, file.path(name, "left"))
+    if (!is(left, "DelayedArray")) {
+        left <- DelayedArray(left)
+    }
+
     right <- .dispatch_loader(file, file.path(name, "right"))
+    if (!is(right, "DelayedArray")) {
+        right <- DelayedArray(right)
+    }
+
     op <- .load_simple_vector(file, file.path(name, "method"))
     op <- .load_Ops(op)
     get(op, envir=baseenv())(left, right)

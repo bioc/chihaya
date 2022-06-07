@@ -11,11 +11,11 @@ knownArrays(arrays)
 }
 \arguments{
 \item{operations}{Named list of loading functions for operations.
-Each function should accept the same arguments as \code{\link{loadDelayed}} and return a \linkS4class{DelayedArray} of some kind.
+Each function should accept the same arguments as \code{\link{loadDelayed}} and return a matrix-like object.
 Names should match the \code{delayed_operation} string used to save the operation to file.}
 
 \item{arrays}{Named list of loading functions for arrays.
-Each function should accept the same arguments as \code{\link{loadDelayed}} and return an array of some kind.
+Each function should accept the same arguments as \code{\link{loadDelayed}} and return a matrix-like object.
 Names should match the \code{delayed_array} string used to save the array to file.}
 }
 \value{

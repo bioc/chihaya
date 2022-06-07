@@ -23,7 +23,8 @@
 #'
 #' @export
 loadDelayed <- function(file, path="delayed") {
-    .dispatch_loader(file, path)
+    out <- .dispatch_loader(file, path)
+    DelayedArray(out)
 }
 
 #' @importFrom rhdf5 h5readAttributes h5read
@@ -113,10 +114,10 @@ known.env$arrays <- list(
 #' This enables third-party packages to modify the \pkg{chihaya} framework for their own purposes.
 #'
 #' @param operations Named list of loading functions for operations.
-#' Each function should accept the same arguments as \code{\link{loadDelayed}} and return a \linkS4class{DelayedArray} of some kind.
+#' Each function should accept the same arguments as \code{\link{loadDelayed}} and return a matrix-like object.
 #' Names should match the \code{delayed_operation} string used to save the operation to file.
 #' @param arrays Named list of loading functions for arrays.
-#' Each function should accept the same arguments as \code{\link{loadDelayed}} and return an array of some kind.
+#' Each function should accept the same arguments as \code{\link{loadDelayed}} and return a matrix-like object.
 #' Names should match the \code{delayed_array} string used to save the array to file.
 #'
 #' @return 
