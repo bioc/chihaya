@@ -151,6 +151,33 @@ setMethod("saveDelayedObject", "ANY", function(x, file, name) {
         write_string_scalar(file, name, "left_orientation", "N");
         saveDelayedObject(x@components, file, paste0(name, "/right_seed"))
         write_string_scalar(file, name, "right_orientation", "T");
+
+    } else if (is(x, "ResidualMatrixSeed")) {
+        h5createGroup(file, name)
+        write_string_scalar(file, name, "r_type_hint", "residual matrix");
+
+        # Mimic a transposition operation.
+        if (x@transposed) {
+            .label_group_operation(file, name, 'transpose')
+            h5write(c(1L, 0L), file, file.path(name, "permutation"))
+            name <- paste0(name, "/seed")
+            h5createGroup(file, name)
+        }
+
+        # Mimic a binary subtraction.
+        .label_group_operation(file, name, 'binary arithmetic')
+        write_string_scalar(file, name, "method", "-")
+        saveDelayedObject(x@.matrix, file, paste0(name, "/left"))
+
+        # Mimic a matrix product.
+        name <- paste0(name, "/right")
+        h5createGroup(file, name)
+        .label_group_operation(file, name, 'matrix product')
+        saveDelayedObject(x@Q, file, paste0(name, "/left_seed"))
+        write_string_scalar(file, name, "left_orientation", "N");
+        saveDelayedObject(x@Qty, file, paste0(name, "/right_seed"))
+        write_string_scalar(file, name, "right_orientation", "N");
+
     } else {
         pkg <- attr(class(x), "package")
         failed <- TRUE
@@ -196,4 +223,30 @@ setMethod("saveDelayedObject", "ANY", function(x, file, name) {
     }
 
     BiocSingular::LowRankMatrix(L, R)
+}
+
+#' @importFrom rhdf5 h5readAttributes
+.load_residual_matrix <- function(file, name) {
+    if (missing(file)) {
+        return(length(find.package("ResidualMatrix")) > 0);
+    }
+
+    attrs <- h5readAttributes(file, name)
+    transposed <- FALSE
+    if (attrs$delayed_operation == "transpose") {
+        transposed <- TRUE
+        name <- paste0(name, "/seed")
+    }
+
+    .matrix <- .dispatch_loader(file, paste0(name, "/left"))
+    .matrix <- .matrix@seed # TODO: fix this in ResidualMatrix so that subtraction works for arbitrary DelayedMatrix objects.
+
+    Q <- .dispatch_loader(file, paste0(name, "/right/left_seed"))
+    Qty <- .dispatch_loader(file, paste0(name, "/right/right_seed"))
+
+    if (!isNamespaceLoaded("ResidualMatrix")) {
+        loadNamespace("ResidualMatrix")
+    }
+    seed <- new("ResidualMatrixSeed", .matrix = .matrix, Q = as.matrix(Q), Qty = as.matrix(Qty), transposed = transposed)
+    DelayedArray(seed)
 }

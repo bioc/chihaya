@@ -17,6 +17,7 @@ Imports:
     HDF5Array
 Suggests:
     BiocSingular,
+    ResidualMatrix,
     BiocStyle,
     testthat,
     rmarkdown,
