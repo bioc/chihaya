@@ -26,17 +26,21 @@ setMethod("saveDelayedObject", "DelayedSubset", function(x, file, name) {
     h5createGroup(file, name)
     .label_group_operation(file, name, 'subset')
 
-    zerobased <- x@index
-    for (i in seq_along(zerobased)) {
-        if (!is.null(zerobased[[i]])) {
-            zerobased[[i]] <- zerobased[[i]] - 1L
-        }
-    }
+    zerobased <- .zero_indices(x@index)
     .save_list(zerobased, file, file.path(name, "index"), vectors.only=TRUE)
 
     saveDelayedObject(x@seed, file, file.path(name, "seed"))
     invisible(NULL)
 })
+
+.zero_indices <- function(indices) {
+    for (i in seq_along(indices)) {
+        if (!is.null(indices[[i]])) {
+            indices[[i]] <- indices[[i]] - 1L
+        }
+    }
+    indices
+}
 
 .load_delayed_subset <- function(file, name, contents) {
     x <- .dispatch_loader(file, file.path(name, "seed"))
@@ -45,6 +49,12 @@ setMethod("saveDelayedObject", "DelayedSubset", function(x, file, name) {
     }
 
     indices <- .load_list(file, file.path(name, "index"), vectors.only=TRUE)
+    indices <- .restore_indices(indices)
+
+    do.call(`[`, c(list(x), indices, list(drop=FALSE)))
+}
+
+.restore_indices <- function(indices) {
     for (i in seq_along(indices)) {
         if (is.null(indices[[i]])) {
             indices[[i]] <- substitute()
@@ -52,6 +62,6 @@ setMethod("saveDelayedObject", "DelayedSubset", function(x, file, name) {
             indices[[i]] <- indices[[i]] + 1L
         }
     }
-
-    do.call(`[`, c(list(x), indices, list(drop=FALSE)))
+    indices
 }
+
