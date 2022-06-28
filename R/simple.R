@@ -73,7 +73,7 @@ setMethod("saveDelayedObject", "DelayedArray", function(x, file, name) {
 
 #' @export
 #' @rdname simple
-#' @importFrom rhdf5 h5createGroup h5createDataset h5write
+#' @importFrom rhdf5 h5createGroup h5createDataset h5write H5Dopen H5Dclose
 #' @importClassesFrom Matrix CsparseMatrix
 setMethod("saveDelayedObject", "CsparseMatrix", function(x, file, name) {
     h5createGroup(file, name)

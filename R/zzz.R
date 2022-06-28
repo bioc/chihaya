@@ -21,6 +21,7 @@ known.env$operations <- list(
 known.env$arrays <- list(
     `dense array`=.load_array,
     `sparse matrix`=.load_csparse_matrix,
+    `constant array`=.load_constant_array,
     `external hdf5 dense array`=.load_dense_hdf5_array,
     `external hdf5 sparse matrix`=.load_sparse_hdf5_matrix
 )

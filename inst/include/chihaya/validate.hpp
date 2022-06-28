@@ -9,6 +9,7 @@
 #include "sparse_matrix.hpp"
 #include "external_hdf5.hpp"
 #include "custom_array.hpp"
+#include "constant_array.hpp"
 
 #include "dimnames.hpp"
 #include "subset_assignment.hpp"
@@ -69,6 +70,8 @@ inline ArrayDetails validate(const H5::Group& handle, const std::string& name) {
                 output = validate_custom_array(handle, name);
             } else if (atype.rfind("external hdf5 ", 0) != std::string::npos) {
                 output = validate_external_hdf5(handle, name);
+            } else if (atype == "constant array") {
+                output = validate_constant_array(handle, name);
             } else {
                 throw std::runtime_error(std::string("unknown array type '") + atype + "' at '" + name + "'");
             }
