@@ -24,27 +24,9 @@
 #' @importFrom rhdf5 h5createGroup h5write
 setMethod("saveDelayedObject", "ConstantArraySeed", function(x, file, name) {
     h5createGroup(file, name)
-    .label_group_seed(file, name, 'constant array')
+    .labelArrayGroup(file, name, 'constant array')
     h5write(dim(x), file, file.path(name, "dimensions"));
-
-    if (is.logical(x@value)) {
-        write_integer_scalar(file, name, "value", as.integer(x@value))
-
-        # Decorating it with the same stuff as rhdf5 uses.
-        fhandle <- H5Fopen(file)
-        on.exit(H5Fclose(fhandle))
-        dhandle <- H5Dopen(fhandle, file.path(name, "value"))
-        on.exit(H5Dclose(dhandle), add=TRUE, after=FALSE)
-        h5writeAttribute("logical", dhandle, "storage.mode", asScalar = TRUE, encoding = "UTF-8")
-
-    } else if (is.numeric(x@value)) {
-        write_number_scalar(file, name, "value", x@value)
-    } else if (is.character(x@value)) {
-        write_string_scalar(file, name, "value", x@value)
-    } else {
-        stop("unsupported constant type '", typeof(x@value), "'")
-    }
-
+    .saveScalar(file, "value", x@value, parent=name)
     invisible(NULL)
 })
 

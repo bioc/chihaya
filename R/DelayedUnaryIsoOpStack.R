@@ -79,14 +79,14 @@ setMethod("saveDelayedObject", "DelayedUnaryIsoOpStack", function(x, file, name)
                             "digamma", "trigamma")
 
         if (generic %in% direct.support) {
-            .label_group_operation(file, name, 'unary math')
+            .labelOperationGroup(file, name, 'unary math')
             write_string_scalar(file, name, "method", generic)
             return(seed.name)
         }
 
         log.base.support <- c(log2=2, log10=10)
         if (generic %in% names(log.base.support)) {
-            .label_group_operation(file, name, 'unary math')
+            .labelOperationGroup(file, name, 'unary math')
             write_string_scalar(file, name, "method", "log")
             write_double_scalar(file, name, "base", log.base.support[[generic]])
             return(seed.name)
@@ -95,7 +95,7 @@ setMethod("saveDelayedObject", "DelayedUnaryIsoOpStack", function(x, file, name)
 
     # Special case for the general case log.
     if (isTRUE(all.equal(as.character(body(OP)), c("log", "a", "base")))) {
-        .label_group_operation(file, name, 'unary math')
+        .labelOperationGroup(file, name, 'unary math')
         write_string_scalar(file, name, "method", "log")
 
         base <- envir$base
@@ -112,7 +112,7 @@ setMethod("saveDelayedObject", "DelayedUnaryIsoOpStack", function(x, file, name)
     seed.name <- file.path(name, "seed")
 
     if (generic %in% getGroupMembers("Math2")) {
-        .label_group_operation(file, name, 'unary math')
+        .labelOperationGroup(file, name, 'unary math')
         write_string_scalar(file, name, "method", generic)
         write_integer_scalar(file, name, "digits", envir$digits)
         return(seed.name)
@@ -159,7 +159,7 @@ supported.Ops <- c(supported.Arith, supported.Compare, supported.Logic)
             delayed_op <- "unary logic"
             generic <- .save_Ops(generic)
         }
-        .label_group_operation(file, name, delayed_op)
+        .labelOperationGroup(file, name, delayed_op)
         write_string_scalar(file, name, "method", generic)
 
         e1 <- envir$e1
@@ -177,7 +177,7 @@ supported.Ops <- c(supported.Arith, supported.Compare, supported.Logic)
             write_string_scalar(file, name, "side", if (left) "left" else "right")
             val <- if (left) e1 else e2
             if (length(val) == 1) {
-                write_number_scalar(file, name, "value", val)
+                .saveScalar(file, "value", val, parent=name)
             } else {
                 # Don't think this ever gets called, because otherwise
                 # we'd be dealing with a DelayedIsoOpWithArgs.
@@ -199,11 +199,11 @@ unary.logic.Ops <- c(is.infinite="is_infinite", is.nan="is_nan", is.finite="is_f
     seed.name <- file.path(name, "seed")
 
     if (generic == "!") {
-        .label_group_operation(file, name, "unary logic")
+        .labelOperationGroup(file, name, "unary logic")
         write_string_scalar(file, name, "method", "!")
         return(seed.name)
     } else if (generic %in% names(unary.logic.Ops)) {
-        .label_group_operation(file, name, "unary special check")
+        .labelOperationGroup(file, name, "unary special check")
         write_string_scalar(file, name, "method", unary.logic.Ops[[generic]])
         return(seed.name)
     }

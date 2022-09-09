@@ -39,11 +39,11 @@ setMethod("saveDelayedObject", "DelayedNaryIsoOp", function(x, file, name) {
     }
 
     if (chosen %in% supported.Arith) {
-        .label_group_operation(file, name, 'binary arithmetic')
+        .labelOperationGroup(file, name, 'binary arithmetic')
     } else if (chosen %in% supported.Compare) {
-        .label_group_operation(file, name, 'binary comparison')
+        .labelOperationGroup(file, name, 'binary comparison')
     } else if (chosen %in% supported.Compare) {
-        .label_group_operation(file, name, 'binary logic')
+        .labelOperationGroup(file, name, 'binary logic')
         chosen <- .save_Ops(chosen)
     }
     write_string_scalar(file, name, "method", chosen)

@@ -24,7 +24,7 @@
 #' @importFrom rhdf5 h5createGroup h5write
 setMethod("saveDelayedObject", "DelayedAperm", function(x, file, name) {
     h5createGroup(file, name)
-    .label_group_operation(file, name, 'transpose')
+    .labelOperationGroup(file, name, 'transpose')
     h5write(x@perm - 1L, file, file.path(name, "permutation"))
     saveDelayedObject(x@seed, file, file.path(name, "seed"))
     invisible(NULL)

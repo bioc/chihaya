@@ -24,10 +24,10 @@
 #' @importFrom rhdf5 h5createGroup h5write
 setMethod("saveDelayedObject", "DelayedSubassign", function(x, file, name) {
     h5createGroup(file, name)
-    .label_group_operation(file, name, 'subset assignment')
+    .labelOperationGroup(file, name, 'subset assignment')
 
     zerobased <- .zero_indices(x@Lindex)
-    .save_list(zerobased, file, file.path(name, "index"), vectors.only=TRUE)
+    .saveList(file, "index", zerobased, parent=name, vectors.only=TRUE)
 
     saveDelayedObject(x@seed, file, file.path(name, "seed"))
     saveDelayedObject(x@Rvalue, file, file.path(name, "value"))
@@ -43,7 +43,7 @@ setMethod("saveDelayedObject", "DelayedSubassign", function(x, file, name) {
 
     value <- .dispatch_loader(file, file.path(path, "value"))
 
-    index <- .load_list(file, file.path(path, "index"), vectors.only=TRUE)
+    index <- .loadList(file, "index", parent=path, vectors.only=TRUE)
     index <- .restore_indices(index)
 
     do.call(`[<-`, c(list(x=x), index, list(value=value)))

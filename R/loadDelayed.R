@@ -32,7 +32,7 @@ loadDelayed <- function(file, path="delayed") {
     attrs <- h5readAttributes(file, path)
 
     if (is.null(attrs$delayed_type)) {
-        vals <- .load_list(file, path)
+        vals <- .loadList(file, path)
 
     } else if (identical(attrs$delayed_type, "operation")) {
         if (startsWith(attrs$delayed_operation, "custom ") && h5exists(file, path, "r_package")) {

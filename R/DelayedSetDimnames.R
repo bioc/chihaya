@@ -24,7 +24,7 @@
 #' @importFrom rhdf5 h5createGroup h5write
 setMethod("saveDelayedObject", "DelayedSetDimnames", function(x, file, name) {
     h5createGroup(file, name)
-    .label_group_operation(file, name, 'dimnames')
+    .labelOperationGroup(file, name, 'dimnames')
 
     dimnames <- x@dimnames
     for (i in seq_along(dimnames)) {
@@ -33,7 +33,7 @@ setMethod("saveDelayedObject", "DelayedSetDimnames", function(x, file, name) {
         }
     }
 
-    .save_list(dimnames, file, file.path(name, "dimnames"), vectors.only=TRUE)
+    .saveList(file, "dimnames", dimnames, parent=name, vectors.only=TRUE)
     saveDelayedObject(x@seed, file, file.path(name, "seed"))
     invisible(NULL)
 })
@@ -45,7 +45,7 @@ setMethod("saveDelayedObject", "DelayedSetDimnames", function(x, file, name) {
         x <- DelayedArray(x)
     }
 
-    dnames <- .load_list(file, file.path(name, "dimnames"), vectors.only=TRUE)
+    dnames <- .loadList(file, "dimnames", parent=name, vectors.only=TRUE)
     dimnames(x) <- dnames
     x
 }

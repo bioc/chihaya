@@ -39,12 +39,12 @@ setMethod("saveDelayedObject", "DelayedUnaryIsoOpWithArgs", function(x, file, na
         stop("unknown operation in ", class(x))
     }
     if (chosen %in% supported.Logic) {
-        .label_group_operation(file, name, 'unary logic')
+        .labelOperationGroup(file, name, 'unary logic')
         chosen <- .save_Ops(chosen)
     } else if (chosen %in% supported.Compare) {
-        .label_group_operation(file, name, 'unary comparison')
+        .labelOperationGroup(file, name, 'unary comparison')
     } else if (chosen %in% supported.Arith) {
-        .label_group_operation(file, name, 'unary arithmetic')
+        .labelOperationGroup(file, name, 'unary arithmetic')
     }
     write_string_scalar(file, name, "method", chosen)
 
@@ -67,7 +67,7 @@ setMethod("saveDelayedObject", "DelayedUnaryIsoOpWithArgs", function(x, file, na
     write_integer_scalar(file, name, "along", along - 1L)
 
     if (length(args) == 1L) {
-        write_number_scalar(file, name, "value", args)
+        .saveScalar(file, "value", args, parent=name)
     } else if (is.null(dim(args)) || length(dim(args)) == 1L) {
         h5write(args, file, file.path(name, "value"))
     } else {

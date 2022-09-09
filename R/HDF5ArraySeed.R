@@ -29,10 +29,10 @@ setMethod("saveDelayedObject", "HDF5ArraySeed", function(x, file, name) {
     }
 
     h5createGroup(file, name)
-    .label_group_seed(file, name, 'external hdf5 dense array')
+    .labelArrayGroup(file, name, 'external hdf5 dense array')
 
     h5write(dim(x), file, file.path(name, "dimensions"))
-    write_string_scalar(file, name, "type", .pick_type(x))
+    write_string_scalar(file, name, "type", .pickArrayType(x))
 
     write_string_scalar(file, name, "file", x@filepath)
     write_string_scalar(file, name, "name", x@name)
@@ -40,22 +40,6 @@ setMethod("saveDelayedObject", "HDF5ArraySeed", function(x, file, name) {
 
     invisible(NULL)
 })
-
-#' @importFrom DelayedArray type
-.pick_type <- function(x) {
-    ty <- type(x)
-    if (ty == "logical") {
-        "BOOLEAN"
-    } else if (ty == "integer") {
-        "INTEGER"
-    } else if (ty == "double") {
-        "FLOAT"
-    } else if (ty == "character") {
-        "STRING"
-    } else {
-        stop("unrecognized type '", ty, "'")
-    }
-}
 
 #' @importFrom HDF5Array HDF5Array
 .load_dense_hdf5_array <- function(file, name, contents) {
@@ -74,10 +58,10 @@ setMethod("saveDelayedObject", "H5SparseMatrixSeed", function(x, file, name) {
     }
 
     h5createGroup(file, name)
-    .label_group_seed(file, name, 'external hdf5 sparse matrix')
+    .labelArrayGroup(file, name, 'external hdf5 sparse matrix')
 
     h5write(dim(x), file, file.path(name, "dimensions"))
-    write_string_scalar(file, name, "type", .pick_type(x))
+    write_string_scalar(file, name, "type", .pickArrayType(x))
 
     write_string_scalar(file, name, "file", x@filepath)
     write_string_scalar(file, name, "name", x@group)

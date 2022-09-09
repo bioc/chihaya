@@ -38,7 +38,7 @@
 setMethod("saveDelayedObject", "ANY", function(x, file, name) {
     if (is(x, "LowRankMatrixSeed")) { # From BiocSingular.
         h5createGroup(file, name)
-        .label_group_operation(file, name, 'matrix product')
+        .labelOperationGroup(file, name, 'matrix product')
         saveDelayedObject(x@rotation, file, paste0(name, "/left_seed"))
         write_string_scalar(file, name, "left_orientation", "N");
         saveDelayedObject(x@components, file, paste0(name, "/right_seed"))
@@ -50,21 +50,21 @@ setMethod("saveDelayedObject", "ANY", function(x, file, name) {
 
         # Mimic a transposition operation.
         if (x@transposed) {
-            .label_group_operation(file, name, 'transpose')
+            .labelOperationGroup(file, name, 'transpose')
             h5write(c(1L, 0L), file, file.path(name, "permutation"))
             name <- paste0(name, "/seed")
             h5createGroup(file, name)
         }
 
         # Mimic a binary subtraction.
-        .label_group_operation(file, name, 'binary arithmetic')
+        .labelOperationGroup(file, name, 'binary arithmetic')
         write_string_scalar(file, name, "method", "-")
         saveDelayedObject(x@.matrix, file, paste0(name, "/left"))
 
         # Mimic a matrix product.
         name <- paste0(name, "/right")
         h5createGroup(file, name)
-        .label_group_operation(file, name, 'matrix product')
+        .labelOperationGroup(file, name, 'matrix product')
         saveDelayedObject(x@Q, file, paste0(name, "/left_seed"))
         write_string_scalar(file, name, "left_orientation", "N");
         saveDelayedObject(x@Qty, file, paste0(name, "/right_seed"))

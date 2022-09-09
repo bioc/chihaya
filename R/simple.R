@@ -35,12 +35,12 @@
 setMethod("saveDelayedObject", "array", function(x, file, name) {
     h5createGroup(file, name)
 
-    .label_group_seed(file, name, "dense array")
+    .labelArrayGroup(file, name, "dense array")
     writeHDF5Array(x, file, file.path(name, 'data'))
     write_integer_scalar(file, name, "native", 0L)
 
     if (!is.null(dimnames(x))) {
-        .save_list(dimnames(x), file, file.path(name, 'dimnames'), vectors.only=TRUE)
+        .saveList(file, 'dimnames', dimnames(x), parent=name, vectors.only=TRUE)
     }
 
     invisible(NULL)
@@ -58,7 +58,7 @@ setMethod("saveDelayedObject", "array", function(x, file, name) {
     }
 
     if (h5exists(file, name, "dimnames")) {
-        dimnames(vals) <- .load_list(file, file.path(name, "dimnames"), vectors.only=TRUE)
+        dimnames(vals) <- .loadList(file, "dimnames", parent=name, vectors.only=TRUE)
     }
 
     vals
@@ -77,7 +77,7 @@ setMethod("saveDelayedObject", "DelayedArray", function(x, file, name) {
 #' @importClassesFrom Matrix CsparseMatrix
 setMethod("saveDelayedObject", "CsparseMatrix", function(x, file, name) {
     h5createGroup(file, name)
-    .label_group_seed(file, name, "sparse matrix")
+    .labelArrayGroup(file, name, "sparse matrix")
 
     # Choosing the most efficient representation where possible.
     if (!is.logical(x@x)) {
@@ -105,7 +105,7 @@ setMethod("saveDelayedObject", "CsparseMatrix", function(x, file, name) {
 
     h5write(dim(x), file, file.path(name, "shape"))
 
-    .save_list(dimnames(x), file, file.path(name, "dimnames"), vectors.only=TRUE)
+    .saveList(file, "dimnames", dimnames(x), parent=name, vectors.only=TRUE)
 })
 
 #' @importFrom Matrix sparseMatrix
@@ -116,7 +116,7 @@ setMethod("saveDelayedObject", "CsparseMatrix", function(x, file, name) {
     x <- .load_simple_vector(file, file.path(name, "data"))
 
     dims <- .load_simple_vector(file, file.path(name, "shape"))
-    dimnames <- .load_list(file, file.path(name, "dimnames"), vectors.only=TRUE)
+    dimnames <- .loadList(file, "dimnames", parent=name, vectors.only=TRUE)
 
     # Avoid inefficiency of sparseMatrix() constructor.
     if (is.logical(x)) {
