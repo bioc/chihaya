@@ -24,6 +24,10 @@
 #' @rdname HDF5ArraySeed
 #' @importClassesFrom HDF5Array HDF5ArraySeed
 setMethod("saveDelayedObject", "HDF5ArraySeed", function(x, file, name) {
+    if (!allowExternalSeeds()) {
+        stop("external reference to '", x@filepath, "' is not allowed")
+    }
+
     h5createGroup(file, name)
     .label_group_seed(file, name, 'external hdf5 dense array')
 
@@ -65,6 +69,10 @@ setMethod("saveDelayedObject", "HDF5ArraySeed", function(x, file, name) {
 #' @rdname HDF5ArraySeed
 #' @importClassesFrom HDF5Array H5SparseMatrix
 setMethod("saveDelayedObject", "H5SparseMatrixSeed", function(x, file, name) {
+    if (!allowExternalSeeds()) {
+        stop("external reference to '", x@filepath, "' is not allowed")
+    }
+
     h5createGroup(file, name)
     .label_group_seed(file, name, 'external hdf5 sparse matrix')
 

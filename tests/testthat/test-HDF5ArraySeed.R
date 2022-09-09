@@ -12,6 +12,12 @@ test_that("HDF5ArraySeeds are saved correctly", {
 
     out <- loadDelayed(temp)
     expect_identical(X, out)
+
+    # Raises an error if we block its use.
+    olda <- allowExternalSeeds(FALSE)
+    expect_false(allowExternalSeeds())
+    on.exit(allowExternalSeeds(olda))
+    expect_error(saveDelayed(X, temp, "foo"), "external reference")
 })
 
 test_that("H5SparseMatrixSeeds are saved correctly", {
@@ -28,5 +34,9 @@ test_that("H5SparseMatrixSeeds are saved correctly", {
 
     out <- loadDelayed(temp)
     expect_identical(out, mat)
-})
 
+    # Raises an error if we block its use.
+    olda <- allowExternalSeeds(FALSE)
+    on.exit(allowExternalSeeds(olda))
+    expect_error(saveDelayed(mat, temp, "bar"), "external reference")
+})
