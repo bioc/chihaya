@@ -26,7 +26,7 @@ namespace chihaya {
  * A dense array is represented as a HDF5 group with the following attributes:
  *
  * - `delayed_type` should be a scalar string `"array"`.
- * - `delayed_operation` should be a scalar string `"dense array"`.
+ * - `delayed_array` should be a scalar string `"dense array"`.
  *
  * Inside the group, we expect:
  *
@@ -34,8 +34,9 @@ namespace chihaya {
  *   This should have a non-zero number of dimensions (i.e., not scalar) and contain integers, floats or strings.
  *   The exact type representation is left to the implementation.
  * - A `native` scalar integer dataset, to be interpreted as a boolean.
- *   This specifies whether the array is saved in the native HDF5 order, i.e., the last dimension is the fastest-changing one.
- *   If false, the array is saved in reverse order, i.e., the first dimension is the fastest-changing.
+ *   This specifies whether the dimensions of the dense array are sorted from slowest-changing (first) to fastest-changing (last).
+ *   If true, the dimensions of the `data` dataset are in the same order as the dimensions of the dense array.
+ *   If false, the dimensions are saved in reverse order, i.e., the first dimension of the dense array is the last dimension of the `data` dataset.
  *
  * Setting `native = 0` is frequently done for efficiency when the in-memory array has a different layout than HDF5.
  * For example, Fortran, R and Julia use column-major order for their matrices, while C code (and HDF5) would typically use row-major order.
@@ -51,7 +52,10 @@ namespace chihaya {
  *   The exact string representation is left to the implementation.
  *
  * Note that the ordering of `dimnames` is unrelated to the setting of `native`.
- * For example, entry 0 always corresponds to the first dimension of the delayed object, not of the HDF5 dataset in `data`.
+ * For example, entry 0 always corresponds to the first dimension of the dense array, regardless of how it is saved in `data`.
+ *
+ * If `data` is an integer dataset, it may contain an `is_boolean` attribute.
+ * This should be an integer scalar; if non-zero, it indicates that the contents of `data` should be treated as booleans where zeros are falsey and non-zeros are truthy.
  */
 inline ArrayDetails validate_dense_array(const H5::Group& handle, const std::string& name) {
     // Check for a 'data' group.
@@ -100,6 +104,11 @@ inline ArrayDetails validate_dense_array(const H5::Group& handle, const std::str
     // Validating dimnames.
     if (handle.exists("dimnames")) {
         validate_dimnames(handle, output.dimensions, "dense array");
+    }
+
+    // Check if it's boolean.
+    if (is_boolean(dhandle)) {
+        output.type = BOOLEAN;
     }
 
     return output;

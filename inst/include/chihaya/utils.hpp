@@ -106,6 +106,23 @@ inline size_t vector_length(const H5::DataSet& handle) {
     handle.getSpace().getSimpleExtentDims(&len);
     return len;
 }
+
+inline bool is_boolean(const H5::DataSet& handle) {
+    int is_bool = 0;
+    if (handle.attrExists("is_boolean")) {
+        if (handle.getDataType().getClass() != H5T_INTEGER) {
+            throw std::runtime_error("'is_boolean' attribute should only exist for integer datasets");
+        }
+
+        auto ahandle = handle.openAttribute("is_boolean");
+        if (ahandle.getSpace().getSimpleExtentNdims() != 0 || ahandle.getTypeClass() != H5T_INTEGER) {
+            throw std::runtime_error("'is_boolean' attribute should be an integer scalar");
+        }
+
+        ahandle.read(H5::PredType::NATIVE_INT, &is_bool);
+    }
+    return is_bool;
+}
 /**
  * @endcond
  */

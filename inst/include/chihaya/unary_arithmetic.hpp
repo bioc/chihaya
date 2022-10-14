@@ -74,7 +74,7 @@ inline ArrayType determine_arithmetic_type(const ArrayType& first, const ArrayTy
  * - A `method` string scalar dataset, specifying the arithmetic method to use.
  *   This can be any one of `+`, `-`, `/`, `*`, `^`, `%%` (modulo) or `%/%` (integer division).
  *   The exact string representation is left to the implementation.
- * - A `side` dataset, describing the side of the `seed` object to apply the operation.
+ * - A `side` string scalar dataset, describing the side of the `seed` object to apply the operation.
  *   This can be `"left"`, when `value` is applied to the left of `seed`, e.g., `value - seed`;
  *   or `"right"`, when `value` is applied to the right of `seed`, e.g., `seed - value`.
  *   For `+` and `-` as pure unary methods, this may also be `"none"`.

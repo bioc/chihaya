@@ -24,7 +24,7 @@ namespace chihaya {
  * A sparse matrix is represented as a HDF5 group with the following attributes:
  *
  * - `delayed_type` should be a scalar string `"array"`.
- * - `delayed_operation` should be a scalar string `"sparse matrix"`.
+ * - `delayed_array` should be a scalar string `"sparse matrix"`.
  *
  * Inside the group, we expect:
  *
@@ -50,7 +50,8 @@ namespace chihaya {
  *   Each (non-missing) entry should be a 1-dimensional string dataset of length equal to the extent of its dimension.
  *   The exact string representation is left to the implementation.
  *
- * The type of the output object is either `INTEGER` or `FLOAT`.
+ * If `data` is an integer dataset, it may contain an `is_boolean` attribute.
+ * This should be an integer scalar; if non-zero, it indicates that the contents of `data` should be treated as booleans where zeros are falsey and non-zeros are truthy.
  */
 inline ArrayDetails validate_sparse_matrix(const H5::Group& handle, const std::string& name) {
     std::vector<int> dims(2);
@@ -146,6 +147,11 @@ inline ArrayDetails validate_sparse_matrix(const H5::Group& handle, const std::s
     // Validating dimnames.
     if (handle.exists("dimnames")) {
         validate_dimnames(handle, dims, "sparse matrix");
+    }
+
+    // Check if it's boolean.
+    if (is_boolean(dhandle)) {
+        type = BOOLEAN;
     }
 
     return ArrayDetails(type, std::vector<size_t>(dims.begin(), dims.end()));
