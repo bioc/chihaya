@@ -39,6 +39,20 @@ test_that("saving of an array works correctly", {
     expect_identical(x, out)
 })
 
+test_that("saving of a logical array works correctly", {
+    x0 <- matrix(runif(200), ncol=20)
+
+    # Preserves logical arrays.
+    x <- DelayedArray(x0 > 0.5)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+
+    arra <- rhdf5::h5readAttributes(tmp, "delayed/data")
+    expect_identical(1L, arra$is_boolean)
+    out <- loadDelayed(tmp)
+    expect_identical(x, out)
+})
+
 test_that("saving of a CsparseMatrix works correctly", {
     x0 <- rsparsematrix(20, 10, 0.1)
     x <- DelayedArray(x0)
@@ -91,9 +105,8 @@ test_that("saving of a CsparseMatrix works correctly with logicals", {
     tmp <- tempfile(fileext=".h5")
     saveDelayed(x, tmp)
 
-    library(HDF5Array)
-    stuff <- H5SparseMatrix(tmp, "delayed")
-    expect_identical(type(stuff), "logical")
+    arra <- rhdf5::h5readAttributes(tmp, "delayed/data")
+    expect_identical(1L, arra$is_boolean)
 
     out <- loadDelayed(tmp)
     expect_identical(x, out)

@@ -31,26 +31,54 @@
 #' @export
 #' @rdname simple
 #' @importFrom HDF5Array writeHDF5Array 
-#' @importFrom Matrix t
+#' @importFrom DelayedArray type
 setMethod("saveDelayedObject", "array", function(x, file, name) {
     h5createGroup(file, name)
-
     .labelArrayGroup(file, name, "dense array")
-    writeHDF5Array(x, file, file.path(name, 'data'))
+
+    dname <- paste0(name, "/data")
+    writeHDF5Array(x, file, dname)
     write_integer_scalar(file, name, "native", 0L)
 
     if (!is.null(dimnames(x))) {
         .saveList(file, 'dimnames', dimnames(x), parent=name, vectors.only=TRUE)
     }
 
+    if (type(x) == "logical") {
+        .add_logical_attribute(file, dname)
+    } 
+
     invisible(NULL)
 })
+
+#' @importFrom rhdf5 H5Fopen H5Dopen H5Fclose H5Dclose h5writeAttribute H5Aexists H5Adelete
+.add_logical_attribute <- function(file, name) {
+    fhandle <- H5Fopen(file)
+    on.exit(H5Fclose(fhandle), add=TRUE)
+    dhandle <- H5Dopen(fhandle, name)
+    on.exit(H5Dclose(dhandle), add=TRUE)
+
+    h5writeAttribute(1L, h5obj=dhandle, name="is_boolean", asScalar=TRUE)
+
+    # Remove this to avoid confusion with 'is_boolean'.
+    rattr <- "storage.mode"
+    if (H5Aexists(h5obj = dhandle, name = rattr)) {
+        H5Adelete(h5obj = dhandle, name = rattr)
+    }
+}
+
+#' @importFrom rhdf5 h5readAttributes
+.is_logical <- function(file, dname) {
+    isTRUE(h5readAttributes(file, dname)$is_boolean == 1L)
+}
 
 #' @importFrom Matrix t
 #' @importFrom HDF5Array HDF5Array
 #' @importFrom DelayedArray DelayedArray
+#' @importFrom rhdf5 h5readAttributes
 .load_array <- function(file, name, contents) {
-    vals <- h5read(file, file.path(name, "data"))
+    dname <- paste0(name, "/data")
+    vals <- h5read(file, dname)
 
     # If it's native, we need to undo rhdf5's transposition.
     if (h5read(file, file.path(name, "native"))) { 
@@ -59,6 +87,10 @@ setMethod("saveDelayedObject", "array", function(x, file, name) {
 
     if (h5exists(file, name, "dimnames")) {
         dimnames(vals) <- .loadList(file, "dimnames", parent=name, vectors.only=TRUE)
+    }
+
+    if (.is_logical(file, dname)) {
+        storage.mode(vals) <- "logical"
     }
 
     vals
@@ -85,7 +117,7 @@ setMethod("saveDelayedObject", "CsparseMatrix", function(x, file, name) {
     } else {
         xstore <- "H5T_NATIVE_UCHAR"
     }
-    dname <- file.path(name, "data")
+    dname <- paste0(name, "/data")
     h5createDataset(file, dname, dims=length(x@x), H5type=xstore, storage.mode=typeof(x@x), chunk=min(length(x@x), 200000));
     h5write(x@x, file, dname)
 
@@ -105,22 +137,26 @@ setMethod("saveDelayedObject", "CsparseMatrix", function(x, file, name) {
 
     h5write(dim(x), file, file.path(name, "shape"))
 
+    if (type(x) == "logical") {
+        .add_logical_attribute(file, dname)
+    } 
+
     .saveList(file, "dimnames", dimnames(x), parent=name, vectors.only=TRUE)
 })
 
 #' @importFrom Matrix sparseMatrix
-#' @importFrom rhdf5 h5readAttributes
 .load_csparse_matrix <- function(file, name) {
     p <- .load_simple_vector(file, file.path(name, "indptr")) 
     i <- .load_simple_vector(file, file.path(name, "indices"))
-    x <- .load_simple_vector(file, file.path(name, "data"))
+    dname <- paste0(name, "/data")
+    x <- .load_simple_vector(file, dname)
 
     dims <- .load_simple_vector(file, file.path(name, "shape"))
     dimnames <- .loadList(file, "dimnames", parent=name, vectors.only=TRUE)
 
-    # Avoid inefficiency of sparseMatrix() constructor.
-    if (is.logical(x)) {
+    if (.is_logical(file, dname)) {
         cls <- "lgCMatrix"
+        x <- as.logical(x)
     } else {
         cls <- "dgCMatrix"
         x <- as.double(x)
