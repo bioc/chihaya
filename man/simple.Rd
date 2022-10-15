@@ -24,6 +24,11 @@ A group is created at \code{name} containing the contents of \code{x}.
 Methods to save simple seed classes - namely, ordinary matrices or sparse \pkg{Matrix} objects - into the delayed operation file.
 See \dQuote{Dense arrays} and \dQuote{Sparse matrices} at \url{https://ltla.github.io/chihaya} for more details.
 }
+\details{
+For string arrays, missing values are handled by the \code{"missing-value-placeholder"} attribute on the \code{data} dataset.
+All \code{NA} values in the array are replaced by the placeholder value in the attribute when they are saved inside the HDF5 file.
+If this attribute is not present, it can be assumed that all strings are non-missing.
+}
 \examples{
 # Saving an ordinary matrix.
 X <- matrix(rpois(100, 2), 5, 20)

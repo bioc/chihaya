@@ -4,8 +4,8 @@ Description:
     Saves the delayed operations of a DelayedArray to a HDF5 file.
     This enables efficient recovery of the DelayedArray's contents in other languages and analysis frameworks.
 Authors@R: person("Aaron", "Lun", role=c("cre", "aut"), email="infinite.monkeys.with.keyboards@gmail.com") 
-Version: 0.101.5
-Date: 2022-09-09
+Version: 0.101.6
+Date: 2022-09-14
 License: GPL-3
 Depends: 
     DelayedArray

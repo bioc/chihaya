@@ -53,6 +53,30 @@ test_that("saving of a logical array works correctly", {
     expect_identical(x, out)
 })
 
+test_that("missing values in character arrays are respected", {
+    x0 <- matrix(sample(LETTERS, 100, replace=TRUE), 5, 20)
+    x <- DelayedArray(x0)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+
+    arra <- rhdf5::h5readAttributes(tmp, "delayed/data")
+    expect_null(arra[["missing-value-placeholder"]])
+    out <- loadDelayed(tmp)
+    expect_identical(x, out)
+
+    # Throwing in some missing values.
+    x0[1] <- "NA"
+    x0[100] <- NA
+    x <- DelayedArray(x0)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+
+    arra <- rhdf5::h5readAttributes(tmp, "delayed/data")
+    expect_identical("_NA", arra[["missing-value-placeholder"]])
+    out <- loadDelayed(tmp)
+    expect_identical(x, out)
+})
+
 test_that("saving of a CsparseMatrix works correctly", {
     x0 <- rsparsematrix(20, 10, 0.1)
     x <- DelayedArray(x0)

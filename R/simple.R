@@ -5,6 +5,11 @@
 #'
 #' @param x An R object of the indicated class.
 #' @inheritParams saveDelayedObject
+#'
+#' @details
+#' For string arrays, missing values are handled by the \code{"missing-value-placeholder"} attribute on the \code{data} dataset.
+#' All \code{NA} values in the array are replaced by the placeholder value in the attribute when they are saved inside the HDF5 file.
+#' If this attribute is not present, it can be assumed that all strings are non-missing.
 #' 
 #' @return A \code{NULL}, invisibly.
 #' A group is created at \code{name} containing the contents of \code{x}.
@@ -36,6 +41,16 @@ setMethod("saveDelayedObject", "array", function(x, file, name) {
     h5createGroup(file, name)
     .labelArrayGroup(file, name, "dense array")
 
+    missing.placeholder <- NULL
+    if (type(x) == "character" && anyNA(x)) {
+        missing.placeholder <- "NA"
+        search <- unique(x)
+        while (missing.placeholder %in% search) {
+            missing.placeholder <- paste0("_", missing.placeholder)
+        }
+        x[is.na(x)] <- missing.placeholder
+    }
+
     dname <- paste0(name, "/data")
     writeHDF5Array(x, file, dname)
     write_integer_scalar(file, name, "native", 0L)
@@ -46,30 +61,49 @@ setMethod("saveDelayedObject", "array", function(x, file, name) {
 
     if (type(x) == "logical") {
         .add_logical_attribute(file, dname)
-    } 
+    } else if (!is.null(missing.placeholder)) {
+        .add_missing_string_placeholder(file, dname, missing.placeholder)
+    }
 
     invisible(NULL)
 })
 
 #' @importFrom rhdf5 H5Fopen H5Dopen H5Fclose H5Dclose h5writeAttribute H5Aexists H5Adelete
-.add_logical_attribute <- function(file, name) {
+.swap_attribute <- function(file, dname, aname, value, remove) { 
     fhandle <- H5Fopen(file)
     on.exit(H5Fclose(fhandle), add=TRUE)
-    dhandle <- H5Dopen(fhandle, name)
+    dhandle <- H5Dopen(fhandle, dname)
     on.exit(H5Dclose(dhandle), add=TRUE)
 
-    h5writeAttribute(1L, h5obj=dhandle, name="is_boolean", asScalar=TRUE)
-
-    # Remove this to avoid confusion with 'is_boolean'.
-    rattr <- "storage.mode"
-    if (H5Aexists(h5obj = dhandle, name = rattr)) {
-        H5Adelete(h5obj = dhandle, name = rattr)
+    # Removing the older attribute, usually added by rhdf5. This avoids
+    # confusion with two attributes that kind-of say the same thing. It also
+    # ensures that our tests don't just work because rhdf5 is detecting its
+    # own attributes, but rather, our own flags are doing the work.
+    for (r in remove) {
+        if (H5Aexists(h5obj = dhandle, name = r)) {
+            H5Adelete(h5obj = dhandle, name = r)
+        }
     }
+
+    h5writeAttribute(value, h5obj=dhandle, name=aname, asScalar=TRUE)
+}
+
+.add_logical_attribute <- function(file, name) {
+    .swap_attribute(file, name, "is_boolean", 1L, "storage.mode") 
 }
 
 #' @importFrom rhdf5 h5readAttributes
 .is_logical <- function(file, dname) {
     isTRUE(h5readAttributes(file, dname)$is_boolean == 1L)
+}
+
+.add_missing_string_placeholder <- function(file, dname, placeholder) {
+    .swap_attribute(file, dname, "missing-value-placeholder", placeholder, character(0))
+}
+
+#' @importFrom rhdf5 h5readAttributes
+.extract_missing_string_placeholder <- function(file, dname) {
+    h5readAttributes(file, dname)[["missing-value-placeholder"]]
 }
 
 #' @importFrom Matrix t
@@ -89,8 +123,15 @@ setMethod("saveDelayedObject", "array", function(x, file, name) {
         dimnames(vals) <- .loadList(file, "dimnames", parent=name, vectors.only=TRUE)
     }
 
-    if (.is_logical(file, dname)) {
-        storage.mode(vals) <- "logical"
+    if (is.integer(vals)) {
+        if (.is_logical(file, dname)) {
+            storage.mode(vals) <- "logical"
+        }
+    } else if (is.character(vals)) {
+        missing.placeholder <- .extract_missing_string_placeholder(file, dname)
+        if (!is.null(missing.placeholder)) {
+            vals[vals== missing.placeholder] <- NA_character_
+        }
     }
 
     vals
