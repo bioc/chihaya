@@ -19,6 +19,14 @@ Validate the delayed objects inside a HDF5 file.
 This is automatically run at the end of every \code{\link{saveDelayed}} call to check the integrity of the saved files.
 See \url{https://ltla.github.io/chihaya} for more details.
 }
+\examples{
+X <- DelayedArray(matrix(runif(100), ncol=20))
+Y <- X[1:2,3:5]
+temp <- tempfile(fileext=".h5")
+saveDelayed(Y, temp)
+validate(temp, "delayed")
+
+}
 \seealso{
 See \url{https://ltla.github.io/chihaya} for the specification.
 }

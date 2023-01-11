@@ -13,6 +13,12 @@
 #'
 #' @seealso
 #' See \url{https://ltla.github.io/chihaya} for the specification.
+#' @examples
+#' X <- DelayedArray(matrix(runif(100), ncol=20))
+#' Y <- X[1:2,3:5]
+#' temp <- tempfile(fileext=".h5")
+#' saveDelayed(Y, temp)
+#' validate(temp, "delayed")
 #'
 #' @export
 #' @importFrom Rcpp sourceCpp

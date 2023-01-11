@@ -29,6 +29,16 @@ End-users should use the \code{\link{saveDelayed}} function instead.
 
 The \linkS4class{DelayedArray} method will simply extract the seed and use it to call \code{\link{saveDelayedObject}} again.
 }
+\examples{
+library(HDF5Array)
+X <- rsparsematrix(100, 20, 0.1)
+Y <- DelayedArray(X)[1:10,1:5]
+
+temp <- tempfile(fileext=".h5")
+rhdf5::h5createFile(temp)
+saveDelayedObject(Y, temp, "FOO")
+rhdf5::h5ls(temp)
+}
 \author{
 Aaron Lun
 }
