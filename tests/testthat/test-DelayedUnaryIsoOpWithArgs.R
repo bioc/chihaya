@@ -21,6 +21,26 @@ test_that("DelayedUnaryIsoOpWithArgs works as expected", {
     expect_s4_class(roundtrip@seed, "DelayedUnaryIsoOpWithArgs")
 })
 
+test_that("DelayedUnaryIsoOpWithArgs works along the other dimension", {
+    Z <- X - runif(5)
+    temp <- tempfile(fileext=".h5")
+    saveDelayed(Z, temp)
+
+    # Manually injecting along=1, because we can't actually seem to stage a
+    # DelayedArray directly with along=1; calling DelayedArray::sweep does
+    # a double-transpose instead.
+    rhdf5::h5delete(temp, "delayed/along")
+    rhdf5::h5write(1L, temp, "delayed/along")
+
+    vec <- runif(20)
+    rhdf5::h5delete(temp, "delayed/value")
+    rhdf5::h5write(vec, temp, "delayed/value")
+
+    roundtrip <- loadDelayed(temp)
+    expected <- sweep(as.matrix(X), MARGIN=2, STATS=vec, FUN="-")
+    expect_identical(as.matrix(expected), as.matrix(roundtrip))
+})
+
 test_that("DelayedUnaryIsoOpWithArgs handles logical renaming", {
     Z <- X & runif(5) > 5
     temp <- tempfile(fileext=".h5")

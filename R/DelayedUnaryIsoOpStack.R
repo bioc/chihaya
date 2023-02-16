@@ -276,6 +276,7 @@ unary.logic.Ops <- c(is.infinite="is_infinite", is.nan="is_nan", is.finite="is_f
 
             } else {
                 # Stolen from base::sweep.
+                along <- along + 1L
                 perm <- c(along, seq_along(dim(x))[-along])
                 tmp <- aperm(x, perm)
 
