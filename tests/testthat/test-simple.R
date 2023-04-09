@@ -143,6 +143,10 @@ test_that("type chooser works correctly", {
     expect_identical(chihaya:::get_best_type(c(100000)), "H5T_NATIVE_UINT")
     expect_identical(chihaya:::get_best_type(c(-100000)), "H5T_NATIVE_INT")
     expect_identical(chihaya:::get_best_type(numeric(0)), "H5T_NATIVE_USHORT")
-    expect_identical(chihaya:::get_best_type(c(5e9)), "H5T_NATIVE_ULONG")
-    expect_identical(chihaya:::get_best_type(c(-5e9)), "H5T_NATIVE_LONG")
+
+    if (.Platform$OS.type != "windows") {
+        # Long is 32-bit on Windows, fantastic.
+        expect_identical(chihaya:::get_best_type(c(5e9)), "H5T_NATIVE_ULONG")
+        expect_identical(chihaya:::get_best_type(c(-5e9)), "H5T_NATIVE_LONG")
+    }
 })
