@@ -20,7 +20,7 @@ knitr::opts_chunk$set(error=FALSE, warning=FALSE, message=FALSE)
 
 # Motivation
 
-The `r Githubpkg("LTLA/chihaya")` package saves `DelayedArray` objects for efficient, portable and stable reproduction of delayed operations in a new R session or other programming frameworks.
+The `r Biocpkg("chihaya")` package saves `DelayedArray` objects for efficient, portable and stable reproduction of delayed operations in a new R session or other programming frameworks.
 
 - **Portability**.
   We provide a file specification in a standard format (HDF5) that enables other languages to easily interpret and reproduce the delayed operations.

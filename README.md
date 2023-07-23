@@ -2,7 +2,7 @@
 
 ## Overview
 
-Save delayed operations to HDF5 using the [**chihaya**](https://github.com/LTLA/chihaya) specification.
+Save delayed operations to HDF5 using the [**chihaya**](https://github.com/ArtifactDB/chihaya) specification.
 This extracts operations out of a [`DelayedArray`](https://bioconductor.org/packages/DelayedArray) and stores them in a HDF5 file,
 where they can be used to reconstitute the same `DelayedArray` in a new R session - or indeed, in a different analysis framework altogether.
 The idea is to save the operations, which is usually cheap;
@@ -69,7 +69,7 @@ y
 ## [5,] 1.317402933 1.753933055 1.857993438   . 1.83012744 2.11469960
 ```
 
-The file at `fpath` follows the specification described [here](https://github.com/LTLA/chihaya).
+The file at `fpath` follows the specification described [here](https://github.com/ArtifactDB/chihaya).
 This provides cross-language portability and ensures that the serialization process is robust to changes in the **DelayedArray** class structure.
 
 ## Comments
