@@ -18,10 +18,10 @@ namespace chihaya {
 /**
  * @cond
  */
-inline ArrayDetails validate(const H5::Group& handle, const std::string&);
+inline ArrayDetails validate(const H5::Group& handle, const std::string&, const Version&);
 
 template<class V>
-void validate_dimnames(const H5::Group& handle, const V& dimensions, const std::string& message) {
+void validate_dimnames(const H5::Group& handle, const V& dimensions, const std::string& message, const Version& version) {
     if (!handle.exists("dimnames") || handle.childObjType("dimnames") != H5O_TYPE_GROUP) {
         throw std::runtime_error(std::string("expected 'dimnames' group for a ") + message);
     }
@@ -30,7 +30,7 @@ void validate_dimnames(const H5::Group& handle, const V& dimensions, const std::
     ListDetails list_params;
     
     try {
-        list_params = validate_list(dhandle);
+        list_params = validate_list(dhandle, version);
     } catch (std::exception& e) {
         throw std::runtime_error(std::string("failed to load 'dimnames' list for a ") + message + std::string(":\n  ") + e.what());
     }
@@ -65,6 +65,7 @@ void validate_dimnames(const H5::Group& handle, const V& dimensions, const std::
  *
  * @param handle An open handle on a HDF5 group representing a dimnames assignment operation.
  * @param name Name of the group inside the file.
+ * @param version Version of the **chihaya** specification.
  *
  * @return Details of the object after assigning dimnames.
  * Otherwise, if the validation failed, an error is raised.
@@ -80,19 +81,22 @@ void validate_dimnames(const H5::Group& handle, const V& dimensions, const std::
  *   The `seed` group handle is passed to `validate()` to check its contents recursively and to retrieve the dimensions.
  * - A `dimnames` group, representing a list (see `ListDetails`) of length equal to the number of dimensions in the `seed`.
  *   Each child entry corresponds to a dimension of `seed` and contains the names along that dimension.
- *   Missing entries indicate that no names are attached to its dimension.
- *   Each (non-missing) entry should be a 1-dimensional string dataset of length equal to the extent of its dimension.
+ *   Each entry should be a 1-dimensional string dataset of length equal to the extent of its dimension.
  *   The exact string representation and encoding is left to the implementation.
- *   If the implementation supports missing strings, then each string inside each dataset should be non-missing.
+ *   If a dataset is absent, no names are attached to the corresponding dimension.
+ *   It is assumed that each string in each dataset is not missing (i.e., the placeholders described in `validate_dense_array()` should not be used here).
  */
-inline ArrayDetails validate_dimnames(const H5::Group& handle, const std::string& name) {
+inline ArrayDetails validate_dimnames(const H5::Group& handle, const std::string& name, const Version& version) try {
     if (!handle.exists("seed") || handle.childObjType("seed") != H5O_TYPE_GROUP) {
         throw std::runtime_error("expected 'seed' group for a dimnames assignment");
     }
-    auto seed_details = validate(handle.openGroup("seed"), name + "/seed");
-    validate_dimnames(handle, seed_details.dimensions, "dimnames assignment");
+    auto seed_details = validate(handle.openGroup("seed"), name + "/seed", version);
+    validate_dimnames(handle, seed_details.dimensions, "dimnames assignment", version);
     return seed_details;
+} catch (std::exception& e) {
+    throw std::runtime_error("failed to validate dimnames operation at '" + name + "'\n- " + std::string(e.what()));
 }
+
 
 }
 

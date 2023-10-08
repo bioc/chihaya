@@ -72,7 +72,7 @@ setMethod("saveDelayedObject", "DelayedNaryIsoOp", function(x, file, name) {
         right <- DelayedArray(right)
     }
 
-    op <- .load_simple_vector(file, file.path(name, "method"))
+    op <- h5read(file, file.path(name, "method"), drop=TRUE)
     op <- .load_Ops(op)
     get(op, envir=baseenv())(left, right)
 }

@@ -5,11 +5,12 @@
 #include <stdexcept>
 #include <cstdint>
 #include "H5Cpp.h"
+#include "utils.hpp"
 
 namespace chihaya {
 
 template<class Function>
-ArrayDetails validate_minimal(const H5::Group& handle, const std::string& name, Function fun) {
+ArrayDetails validate_minimal(const H5::Group& handle, Function fun, const Version&) {
     if (!handle.exists("dimensions") || handle.childObjType("dimensions") != H5O_TYPE_DATASET) {
         throw std::runtime_error("expected 'dimensions' dataset for " + fun());
     }

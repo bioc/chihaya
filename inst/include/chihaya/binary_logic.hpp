@@ -19,12 +19,12 @@ namespace chihaya {
 /**
  * @cond
  */
-inline ArrayDetails fetch_seed_for_logic(const H5::Group& handle, const std::string& target, const std::string& name) {
+inline ArrayDetails fetch_seed_for_logic(const H5::Group& handle, const std::string& target, const std::string& name, const Version& version) {
     if (!handle.exists(target) || handle.childObjType(target) != H5O_TYPE_GROUP) {
         throw std::runtime_error(std::string("expected '") + target + "' group for a binary logic operation");
     }
 
-    auto seed_details = validate(handle.openGroup(target), name + "/" + target);
+    auto seed_details = validate(handle.openGroup(target), name + "/" + target, version);
     if (seed_details.type == STRING) {
         throw std::runtime_error(std::string("type of '") + target + "' should be numeric or boolean for a binary logic operation");
     }
@@ -41,6 +41,7 @@ inline ArrayDetails fetch_seed_for_logic(const H5::Group& handle, const std::str
  *
  * @param handle An open handle on a HDF5 group representing a binary logic operation.
  * @param name Name of the group inside the file.
+ * @param version Version of the **chihaya** specification.
  *
  * @return Details of the object after applying the logic operation.
  * Otherwise, if the validation failed, an error is raised.
@@ -65,9 +66,9 @@ inline ArrayDetails fetch_seed_for_logic(const H5::Group& handle, const std::str
  *
  * The type of the output object is always boolean.
  */
-inline ArrayDetails validate_binary_logic(const H5::Group& handle, const std::string& name) {
-    auto left_details = fetch_seed_for_logic(handle, "left", name);
-    auto right_details = fetch_seed_for_logic(handle, "right", name);
+inline ArrayDetails validate_binary_logic(const H5::Group& handle, const std::string& name, const Version& version) try {
+    auto left_details = fetch_seed_for_logic(handle, "left", name, version);
+    auto right_details = fetch_seed_for_logic(handle, "right", name, version);
 
     bool okay = are_dimensions_equal(left_details.dimensions, right_details.dimensions);
     if (!okay) {
@@ -92,6 +93,8 @@ inline ArrayDetails validate_binary_logic(const H5::Group& handle, const std::st
 
     left_details.type = BOOLEAN;
     return left_details;
+} catch (std::exception& e) {
+    throw std::runtime_error("failed to validate binary arithmetic operation at '" + name + "'\n- " + std::string(e.what()));
 }
 
 }

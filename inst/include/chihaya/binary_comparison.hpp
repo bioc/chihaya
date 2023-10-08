@@ -19,11 +19,11 @@ namespace chihaya {
 /**
  * @cond
  */
-inline ArrayDetails fetch_seed_for_comparison(const H5::Group& handle, const std::string& target, const std::string& name) {
+inline ArrayDetails fetch_seed_for_comparison(const H5::Group& handle, const std::string& target, const std::string& name, const Version& version) {
     if (!handle.exists(target) || handle.childObjType(target) != H5O_TYPE_GROUP) {
         throw std::runtime_error(std::string("expected '") + target + "' group for a binary comparison operation");
     }
-    return validate(handle.openGroup(target), name + "/" + target);
+    return validate(handle.openGroup(target), name + "/" + target, version);
 }
 /**
  * @endcond
@@ -35,6 +35,7 @@ inline ArrayDetails fetch_seed_for_comparison(const H5::Group& handle, const std
  *
  * @param handle An open handle on a HDF5 group representing a binary comparison operation.
  * @param name Name of the group inside the file.
+ * @param version Version of the **chihaya** specification.
  *
  * @return Details of the object after applying the comparison operation.
  * Otherwise, if the validation failed, an error is raised.
@@ -58,9 +59,9 @@ inline ArrayDetails fetch_seed_for_comparison(const H5::Group& handle, const std
  *
  * The type of the output object is always boolean.
  */
-inline ArrayDetails validate_binary_comparison(const H5::Group& handle, const std::string& name) {
-    auto left_details = fetch_seed_for_comparison(handle, "left", name);
-    auto right_details = fetch_seed_for_comparison(handle, "right", name);
+inline ArrayDetails validate_binary_comparison(const H5::Group& handle, const std::string& name, const Version& version) try {
+    auto left_details = fetch_seed_for_comparison(handle, "left", name, version);
+    auto right_details = fetch_seed_for_comparison(handle, "right", name, version);
 
     bool okay = are_dimensions_equal(left_details.dimensions, right_details.dimensions);
     if (!okay) {
@@ -89,6 +90,8 @@ inline ArrayDetails validate_binary_comparison(const H5::Group& handle, const st
 
     left_details.type = BOOLEAN;
     return left_details;
+} catch (std::exception& e) {
+    throw std::runtime_error("failed to validate binary comparison operation at '" + name + "'\n- " + std::string(e.what()));
 }
 
 }

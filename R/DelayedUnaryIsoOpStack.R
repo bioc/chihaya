@@ -177,13 +177,13 @@ supported.Ops <- c(supported.Arith, supported.Compare, supported.Logic)
             write_string_scalar(file, name, "side", if (left) "left" else "right")
             val <- if (left) e1 else e2
             if (length(val) == 1) {
-                .saveScalar(file, "value", val, parent=name)
+                .saveDataset(file, "value", val, parent=name, scalar=TRUE)
             } else {
                 # Don't think this ever gets called, because otherwise
                 # we'd be dealing with a DelayedIsoOpWithArgs.
                 # Nonetheless, we'll throw in the necessary code.
                 write_integer_scalar(file, name, "along", 0)
-                h5write(val, file, file.path(name, "value"))
+                .saveDataset(file, "value", val, parent=name)
             }
         }
 
@@ -216,14 +216,14 @@ unary.logic.Ops <- c(is.infinite="is_infinite", is.nan="is_nan", is.finite="is_f
         x <- DelayedArray(x)
     }
 
-    op.name <- .load_simple_vector(file, file.path(name, "method"))
+    op.name <- h5read(file, file.path(name, "method"), drop=TRUE)
     op.name <- .load_Ops(op.name)
 
     if (op.name %in% getGroupMembers("Math")) {
         FUN <- get(op.name, envir=baseenv())
         if (op.name=="log") {
             if (h5exists(file, name, "base")){
-                base <- .load_simple_vector(file, file.path(name, "base"))
+                base <- h5read(file, file.path(name, "base"), drop=TRUE)
                 x <- log(x, base=base)
             } else {
                 x <- log(x)
@@ -234,7 +234,7 @@ unary.logic.Ops <- c(is.infinite="is_infinite", is.nan="is_nan", is.finite="is_f
 
     } else if (op.name %in% getGroupMembers("Math2")) {
         FUN <- get(op.name, envir=baseenv())
-        digits <- .load_simple_vector(file, file.path(name, "digits"))
+        digits <- h5read(file, file.path(name, "digits"), drop=TRUE)
         x <- FUN(x, digits=digits)
 
     } else if (op.name %in% unary.logic.Ops) {
@@ -247,12 +247,12 @@ unary.logic.Ops <- c(is.infinite="is_infinite", is.nan="is_nan", is.finite="is_f
 
     } else {
         FUN <- get(op.name, envir=baseenv())
-        side <- .load_simple_vector(file, file.path(name, "side"))
+        side <- h5read(file, file.path(name, "side"), drop=TRUE)
 
         if (side == "none") {
             x <- FUN(x)
         } else {
-            value <- .load_simple_vector(file, file.path(name, "value"))
+            value <- .load_vector_with_attributes(file, file.path(name, "value"))
             if (op.name == "&" || op.name == "|") {
                 value <- as.logical(value)
             }
@@ -261,7 +261,7 @@ unary.logic.Ops <- c(is.infinite="is_infinite", is.nan="is_nan", is.finite="is_f
             if (!h5exists(file, name, "along"))  {
                 simple <- TRUE # i.e., scalar.
             } else {
-                along <- .load_simple_vector(file, file.path(name, "along"))
+                along <- h5read(file, file.path(name, "along"), drop=TRUE)
                 simple <- along == 0
             }
 

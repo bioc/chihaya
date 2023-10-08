@@ -60,7 +60,7 @@ test_that("missing values in character arrays are respected", {
     saveDelayed(x, tmp)
 
     arra <- rhdf5::h5readAttributes(tmp, "delayed/data")
-    expect_null(arra[["missing-value-placeholder"]])
+    expect_null(arra[["missing_placeholder"]])
     out <- loadDelayed(tmp)
     expect_identical(x, out)
 
@@ -72,9 +72,110 @@ test_that("missing values in character arrays are respected", {
     saveDelayed(x, tmp)
 
     arra <- rhdf5::h5readAttributes(tmp, "delayed/data")
-    expect_identical("_NA", arra[["missing-value-placeholder"]])
+    expect_identical("_NA", arra[["missing_placeholder"]])
     out <- loadDelayed(tmp)
     expect_identical(x, out)
+
+    # Back-compatibility check.
+    x0 <- matrix(sample(LETTERS, 100, replace=TRUE), 5, 20)
+    x <- DelayedArray(x0)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+
+    library(rhdf5)
+    (function() {
+        fhandle <- H5Fopen(tmp)
+        on.exit(H5Fclose(fhandle), add=TRUE)
+        dhandle <- H5Dopen(fhandle, "delayed/data")
+        on.exit(H5Dclose(dhandle), add=TRUE)
+        h5writeAttribute("Z", dhandle, "missing-value-placeholder")
+    })()
+
+    copy <- x0
+    copy[copy=="Z"] <- NA
+    out <- loadDelayed(tmp)
+    expect_identical(copy, as.matrix(out))
+})
+
+test_that("missing values in other array types are respected", {
+    # integer.
+    x0 <- matrix(as.integer(rpois(100, 1)), 5, 20)
+    x0[1,1] <- NA
+    x <- DelayedArray(x0)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+
+    arra <- rhdf5::h5readAttributes(tmp, "delayed/data")
+    expect_identical(arra[["missing_placeholder"]], NA_integer_)
+    out <- loadDelayed(tmp)
+    expect_identical(x, out)
+
+    # double.
+    x0 <- matrix(rnorm(100, 1), 5, 20)
+    x0[1,1] <- NA
+    x <- DelayedArray(x0)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+
+    arra <- rhdf5::h5readAttributes(tmp, "delayed/data")
+    expect_identical(arra[["missing_placeholder"]], NA_real_)
+    out <- loadDelayed(tmp)
+    expect_identical(x, out)
+
+    # logical
+    x0 <- matrix(rnorm(100, 1) > 0, 5, 20)
+    x0[1,1] <- NA
+    x <- DelayedArray(x0)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+
+    arra <- rhdf5::h5readAttributes(tmp, "delayed/data")
+    expect_identical(arra[["missing_placeholder"]], -1L)
+    out <- loadDelayed(tmp)
+    expect_identical(x, out)
+})
+
+test_that("non-default missing placeholders are respected", {
+    # integer.
+    x0 <- matrix(as.integer(rpois(100, 1)), 5, 20)
+    x <- DelayedArray(x0)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+
+    library(rhdf5)
+    (function() {
+        fhandle <- H5Fopen(tmp)
+        on.exit(H5Fclose(fhandle), add=TRUE)
+        dhandle <- H5Dopen(fhandle, "delayed/data")
+        on.exit(H5Dclose(dhandle), add=TRUE)
+        h5writeAttribute(1L, dhandle, "missing_placeholder")
+    })()
+
+    out <- loadDelayed(tmp)
+    copy <- x0
+    copy[copy == 1L] <- NA
+    expect_identical(as.matrix(out), copy)
+
+    # NaN special case.
+    x0 <- matrix(rnorm(100, 1), 5, 20)
+    x0[1] <- NaN
+    x <- DelayedArray(x0)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+
+    library(rhdf5)
+    (function() {
+        fhandle <- H5Fopen(tmp)
+        on.exit(H5Fclose(fhandle), add=TRUE)
+        dhandle <- H5Dopen(fhandle, "delayed/data")
+        on.exit(H5Dclose(dhandle), add=TRUE)
+        h5writeAttribute(NaN, dhandle, "missing_placeholder")
+    })()
+
+    out <- loadDelayed(tmp)
+    copy <- x0
+    copy[1] <- NA
+    expect_identical(as.matrix(out), copy)
 })
 
 test_that("saving of a CsparseMatrix works correctly", {
@@ -99,6 +200,16 @@ test_that("saving of a CsparseMatrix works correctly", {
 
     out <- loadDelayed(tmp)
     expect_identical(x, out)
+
+    # Throwing in an NA and an NaN.
+    copy <- x0
+    copy@x[1] <- NA
+    copy@x[2] <- NaN
+    x <- DelayedArray(copy)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+    out <- loadDelayed(tmp)
+    expect_identical(x, out)
 })
 
 test_that("saving of a CsparseMatrix works correctly with integers", {
@@ -121,6 +232,15 @@ test_that("saving of a CsparseMatrix works correctly with integers", {
     saveDelayed(x, tmp)
     out <- loadDelayed(tmp)
     expect_identical(x, out)
+
+    # Throwing in an NA.
+    copy <- x0
+    copy@x[1] <- NA
+    x <- DelayedArray(copy)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+    out <- loadDelayed(tmp)
+    expect_identical(x, out)
 })
 
 test_that("saving of a CsparseMatrix works correctly with logicals", {
@@ -134,19 +254,37 @@ test_that("saving of a CsparseMatrix works correctly with logicals", {
 
     out <- loadDelayed(tmp)
     expect_identical(x, out)
+
+    # Throwing in an NA.
+    copy <- x0
+    copy@x[1] <- NA
+    x <- DelayedArray(copy)
+    tmp <- tempfile(fileext=".h5")
+    saveDelayed(x, tmp)
+    out <- loadDelayed(tmp)
+    expect_identical(x, out)
 })
 
 test_that("type chooser works correctly", {
-    expect_identical(chihaya:::get_best_type(c(1.2, 2.3)), "H5T_NATIVE_DOUBLE")
-    expect_identical(chihaya:::get_best_type(c(1, 2)), "H5T_NATIVE_USHORT")
-    expect_identical(chihaya:::get_best_type(c(-1, 2)), "H5T_NATIVE_SHORT")
-    expect_identical(chihaya:::get_best_type(c(100000)), "H5T_NATIVE_UINT")
-    expect_identical(chihaya:::get_best_type(c(-100000)), "H5T_NATIVE_INT")
-    expect_identical(chihaya:::get_best_type(numeric(0)), "H5T_NATIVE_USHORT")
+    expect_identical(chihaya:::get_best_type_double(c(1.2, 2.3)), "H5T_NATIVE_DOUBLE")
+    expect_identical(chihaya:::get_best_type_double(c(1, NaN, 2)), "H5T_NATIVE_DOUBLE")
+    expect_identical(chihaya:::get_best_type_double(c(1, NA, 2)), "H5T_NATIVE_DOUBLE")
+    expect_identical(chihaya:::get_best_type_double(c(1, 2)), "H5T_NATIVE_UINT8")
+    expect_identical(chihaya:::get_best_type_double(c(-1, 2)), "H5T_NATIVE_INT8")
+    expect_identical(chihaya:::get_best_type_double(c(1000, 2)), "H5T_NATIVE_UINT16")
+    expect_identical(chihaya:::get_best_type_double(c(-1, 2000)), "H5T_NATIVE_INT16")
+    expect_identical(chihaya:::get_best_type_double(c(100000)), "H5T_NATIVE_INT32")
+    expect_identical(chihaya:::get_best_type_double(c(-100000)), "H5T_NATIVE_INT32")
+    expect_identical(chihaya:::get_best_type_double(numeric(0)), "H5T_NATIVE_DOUBLE")
+    expect_identical(chihaya:::get_best_type_double(c(5e9)), "H5T_NATIVE_DOUBLE")
+    expect_identical(chihaya:::get_best_type_double(c(-5e9)), "H5T_NATIVE_DOUBLE")
 
-    if (.Platform$OS.type != "windows") {
-        # Long is 32-bit on Windows, fantastic.
-        expect_identical(chihaya:::get_best_type(c(5e9)), "H5T_NATIVE_ULONG")
-        expect_identical(chihaya:::get_best_type(c(-5e9)), "H5T_NATIVE_LONG")
-    }
+    expect_identical(chihaya:::get_best_type_int(c(1L, NA, 2L)), "H5T_NATIVE_INT32")
+    expect_identical(chihaya:::get_best_type_int(c(1L, 2L)), "H5T_NATIVE_UINT8")
+    expect_identical(chihaya:::get_best_type_int(c(-1L, 2L)), "H5T_NATIVE_INT8")
+    expect_identical(chihaya:::get_best_type_int(c(1000L, 2L)), "H5T_NATIVE_UINT16")
+    expect_identical(chihaya:::get_best_type_int(c(-1L, 2000L)), "H5T_NATIVE_INT16")
+    expect_identical(chihaya:::get_best_type_int(c(100000L)), "H5T_NATIVE_INT32")
+    expect_identical(chihaya:::get_best_type_int(c(-100000L)), "H5T_NATIVE_INT32")
+    expect_identical(chihaya:::get_best_type_int(integer(0)), "H5T_NATIVE_INT32")
 })

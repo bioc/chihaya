@@ -20,6 +20,7 @@ namespace chihaya {
  *
  * @param handle An open handle on a HDF5 group representing a sparse matrix.
  * @param name Name of the group inside the file.
+ * @param version Version of the **chihaya** specification.
  * 
  * A sparse matrix is represented as a HDF5 group with the following attributes:
  *
@@ -52,8 +53,13 @@ namespace chihaya {
  *
  * If `data` is an integer dataset, it may contain an `is_boolean` attribute.
  * This should be an integer scalar; if non-zero, it indicates that the contents of `data` should be treated as booleans where zeros are falsey and non-zeros are truthy.
+ *
+ * `data` may contain a `missing_placeholder` attribute.
+ * This should be a scalar dataset of the same type class as `data`, specifying the placeholder value used for all missing elements,
+ * i.e., any elements in `data` with the same value as the placeholder should be treated as missing.
+ * (Note that, for floating-point datasets, the placeholder itself may be NaN, so byte-wise comparison should be used when checking for missingness.)
  */
-inline ArrayDetails validate_sparse_matrix(const H5::Group& handle, const std::string& name) {
+inline ArrayDetails validate_sparse_matrix(const H5::Group& handle, const std::string& name, const Version& version) try {
     std::vector<int> dims(2);
     {
         auto shandle = check_vector(handle, "shape", "sparse_matrix");
@@ -80,6 +86,7 @@ inline ArrayDetails validate_sparse_matrix(const H5::Group& handle, const std::s
     } else {
         throw std::runtime_error("unknown type of 'data' for a sparse matrix");
     }
+    validate_missing_placeholder(dhandle, version);
 
     // Checking the properties of the indices.
     auto ihandle = check_vector(handle, "indices", "sparse matrix");
@@ -94,7 +101,7 @@ inline ArrayDetails validate_sparse_matrix(const H5::Group& handle, const std::s
     if (iphandle.getTypeClass() != H5T_INTEGER) {
         throw std::runtime_error("'indptr' should be integer for a sparse matrix");
     }
-    if (vector_length(iphandle) != dims[1] + 1) {
+    if (vector_length(iphandle) != static_cast<size_t>(dims[1] + 1)) {
         throw std::runtime_error("'indptr' should have length equal to the number of columns plus 1 for a sparse matrix");
     }
     std::vector<hsize_t> indptrs(dims[1] + 1);
@@ -146,7 +153,7 @@ inline ArrayDetails validate_sparse_matrix(const H5::Group& handle, const std::s
 
     // Validating dimnames.
     if (handle.exists("dimnames")) {
-        validate_dimnames(handle, dims, "sparse matrix");
+        validate_dimnames(handle, dims, "sparse matrix", version);
     }
 
     // Check if it's boolean.
@@ -155,6 +162,8 @@ inline ArrayDetails validate_sparse_matrix(const H5::Group& handle, const std::s
     }
 
     return ArrayDetails(type, std::vector<size_t>(dims.begin(), dims.end()));
+} catch (std::exception& e) {
+    throw std::runtime_error("failed to validate sparse matrix at '" + name + "'\n- " + std::string(e.what()));
 }
 
 }

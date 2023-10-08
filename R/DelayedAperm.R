@@ -31,12 +31,13 @@ setMethod("saveDelayedObject", "DelayedAperm", function(x, file, name) {
 })
 
 #' @import DelayedArray
+#' @importFrom rhdf5 h5read
 .load_delayed_aperm <- function(file, name, contents) {
     x <- .dispatch_loader(file, file.path(name, "seed"))
     if (!is(x, "DelayedArray")) {
         x <- DelayedArray(x)
     }
 
-    perm <- .load_simple_vector(file, file.path(name, "permutation"))
+    perm <- h5read(file, file.path(name, "permutation"), drop=TRUE)
     aperm(x, perm + 1L)
 }

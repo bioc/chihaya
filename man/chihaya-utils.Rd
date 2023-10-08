@@ -4,10 +4,33 @@
 \alias{chihaya-utils}
 \alias{.saveList}
 \alias{.loadList}
-\alias{.labelArrayGroup}
 \alias{.labelOperationGroup}
-\alias{.writeScalar}
+\alias{.labelArrayGroup}
+\alias{.saveDataset}
+\alias{.pickArrayType}
 \title{Developer utilities for custom extensions}
+\usage{
+.saveList(file, name, x, parent = NULL, vectors.only = FALSE)
+
+.loadList(file, name, parent = NULL, vectors.only = FALSE)
+
+.labelOperationGroup(file, name, op)
+
+.labelArrayGroup(file, name, arr)
+
+.saveDataset(
+  file,
+  name,
+  x,
+  parent = NULL,
+  scalar = FALSE,
+  optimize.type = FALSE,
+  h5type = NULL,
+  chunks = NULL
+)
+
+.pickArrayType(x)
+}
 \arguments{
 \item{file}{String containing a path to a file.}
 
@@ -18,7 +41,7 @@ This should be a full path from the root of the file, unless \code{parent} is pr
 \itemize{ 
 \item For \code{.pickArrayType}, this should be an array-like object.
 \item For \code{.saveList}, this should be a list.
-\item For \code{.saveScalar}, this should be a length-1 integer, logical, character or double vector.
+\item For \code{.saveDataset}, this should be a integer, logical, character or double vector or array.
 }}
 
 \item{parent}{String containing the name of the parent containing the child \code{name}.}
@@ -28,6 +51,16 @@ This should be a full path from the root of the file, unless \code{parent} is pr
 \item{op}{String containing the name of the delayed operation to use to label the group.}
 
 \item{arr}{String containing the name of the delayed array to use to label the group.}
+
+\item{scalar}{Logical scalar indicating whether length-1 \code{x} should be saved to file as a scalar.}
+
+\item{optimize.type}{Logical scalar indicating whether to optimize the HDF5 storage type for non-scalar, non-string \code{x}.}
+
+\item{h5type}{String specifying the HDF5 storage type to use for non-scalar, non-string \code{x}, see \code{\link{h5const}("H5T")} for possible choices.
+This is ignored if \code{optimize.type=TRUE}.}
+
+\item{chunks}{Integer vector of length equal to the number of dimensions of non-scalar \code{x}, specifying the chunk dimensions to use.
+If \code{NULL}, this is set to the length of \code{x} (if \code{x} is a vector) or chosen by \pkg{HDF5Array} (if \code{x} is an array).}
 }
 \value{
 \code{.saveList} and \code{.saveScalar} will write \code{x} to file, returning \code{NULL} invisibly.

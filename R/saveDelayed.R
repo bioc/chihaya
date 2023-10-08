@@ -35,7 +35,7 @@ saveDelayed <- function(x, file, path="delayed") {
         h5createFile(file)
     }
     saveDelayedObject(x@seed, file, path)
-    .label_group(file, path, c(delayed_version="0.99"))
+    .label_group(file, path, c(delayed_version="1.0.0"))
     validate(file, path)
     invisible(NULL)
 }

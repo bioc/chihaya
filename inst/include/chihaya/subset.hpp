@@ -18,7 +18,7 @@ namespace chihaya {
 /**
  * @cond
  */
-inline ArrayDetails validate(const H5::Group& handle, const std::string&);
+inline ArrayDetails validate(const H5::Group& handle, const std::string&, const Version&);
 /**
  * @endcond
  */
@@ -44,17 +44,17 @@ inline ArrayDetails validate(const H5::Group& handle, const std::string&);
  *   The `seed` group handle is passed to `validate()` to check its contents recursively and to retrieve the dimensions.
  * - An `index` group, representing a list (see `ListDetails`) of length equal to the number of dimensions in the `seed`.
  *   Each child entry is named after a dimension of `seed` and contains the indices of interest along that dimension.
- *   The absence of an entry for a dimension indicates that no subsetting is to be performed, i.e., the full extent of that dimension is present in the result object.
- *   Each (non-missing) entry should be a 1-dimensional integer dataset containing 0-based indices that are less than the extent of its dimension.
+ *   Each entry should be a 1-dimensional integer dataset containing 0-based indices that are less than the extent of its dimension.
  *   The exact integer representation is left to the implementation.
+ *   The absence of an entry for a dimension indicates that no subsetting is to be performed, i.e., the full extent of that dimension is present in the result object.
  *
  * The type of the output object is the same as that of the `seed`; only the dimensions are changed.
  */
-inline ArrayDetails validate_subset(const H5::Group& handle, const std::string& name) {
+inline ArrayDetails validate_subset(const H5::Group& handle, const std::string& name, const Version& version) try {
     if (!handle.exists("seed") || handle.childObjType("seed") != H5O_TYPE_GROUP) {
         throw std::runtime_error("expected 'seed' group for a subset operation");
     }
-    auto seed_details = validate(handle.openGroup("seed"), name + "/seed");
+    auto seed_details = validate(handle.openGroup("seed"), name + "/seed", version);
 
     if (!handle.exists("index") || handle.childObjType("index") != H5O_TYPE_GROUP) {
         throw std::runtime_error("expected 'index' group for a subset operation"); 
@@ -64,7 +64,7 @@ inline ArrayDetails validate_subset(const H5::Group& handle, const std::string& 
     ListDetails list_params;
     
     try {
-        list_params = validate_list(ihandle);
+        list_params = validate_list(ihandle, version);
     } catch (std::exception& e) {
         throw std::runtime_error(std::string("failed to load 'index' list for a subset operation:\n  ") + e.what());
     }
@@ -100,6 +100,8 @@ inline ArrayDetails validate_subset(const H5::Group& handle, const std::string& 
     }
 
     return seed_details;
+} catch (std::exception& e) {
+    throw std::runtime_error("failed to validate subset operation at '" + name + "'\n- " + std::string(e.what()));
 }
 
 }

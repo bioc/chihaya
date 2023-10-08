@@ -17,7 +17,7 @@ namespace chihaya {
 /**
  * @cond
  */
-inline ArrayDetails validate(const H5::Group& handle, const std::string&);
+inline ArrayDetails validate(const H5::Group& handle, const std::string&, const Version&);
 /**
  * @endcond
  */
@@ -27,6 +27,7 @@ inline ArrayDetails validate(const H5::Group& handle, const std::string&);
  *
  * @param handle An open handle on a HDF5 group representing a transposition.
  * @param name Name of the group inside the file.
+ * @param version Version of the **chihaya** specification.
  *
  * @return Details of the transposed object.
  * Otherwise, if the validation failed, an error is raised.
@@ -48,11 +49,11 @@ inline ArrayDetails validate(const H5::Group& handle, const std::string&);
  *
  * The type of the output is the same as that of `seed`; only the dimensions are altered.
  */
-inline ArrayDetails validate_transpose(const H5::Group& handle, const std::string& name) {
+inline ArrayDetails validate_transpose(const H5::Group& handle, const std::string& name, const Version& version) try {
     if (!handle.exists("seed") || handle.childObjType("seed") != H5O_TYPE_GROUP) {
         throw std::runtime_error("expected 'seed' group for a transpose operation");
     }
-    auto seed_details = validate(handle.openGroup("seed"), name + "/seed");
+    auto seed_details = validate(handle.openGroup("seed"), name + "/seed", version);
 
     if (!handle.exists("permutation") || handle.childObjType("permutation") != H5O_TYPE_DATASET) {
         throw std::runtime_error("expected 'permutation' dataset for a transpose operation"); 
@@ -90,6 +91,8 @@ inline ArrayDetails validate_transpose(const H5::Group& handle, const std::strin
 
     seed_details.dimensions = new_dimensions;
     return seed_details;
+} catch (std::exception& e) {
+    throw std::runtime_error("failed to validate transposition at '" + name + "'\n- " + std::string(e.what()));
 }
 
 }

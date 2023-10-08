@@ -54,6 +54,36 @@ test_that("DelayedUnaryIsoOpWithArgs handles logical renaming", {
     expect_s4_class(roundtrip@seed, "DelayedUnaryIsoOpWithArgs")
 })
 
+test_that("DelayedUnaryIsoOpWithArgs handles NAs correctly", {
+    vec <- runif(5)
+    vec[1] <- NA
+    Z <- X - vec
+    temp <- tempfile(fileext=".h5")
+    saveDelayed(Z, temp)
+    roundtrip <- loadDelayed(temp)
+    expect_identical(as.matrix(Z), as.matrix(roundtrip))
+
+    # Works with non-default NAs
+    vec <- 1:5
+    Z <- X / vec
+    temp <- tempfile(fileext=".h5")
+    saveDelayed(Z, temp)
+
+    library(rhdf5)
+    (function() {
+        fhandle <- H5Fopen(temp)
+        on.exit(H5Fclose(fhandle), add=TRUE)
+        dhandle <- H5Dopen(fhandle, "delayed/value")
+        on.exit(H5Dclose(dhandle), add=TRUE)
+        h5writeAttribute(3, dhandle, "missing_placeholder")
+    })()
+
+    roundtrip <- loadDelayed(temp)
+    vec[3] <- NA
+    expected <- X / vec
+    expect_identical(as.matrix(expected), as.matrix(roundtrip))
+})
+
 test_that("DelayedUnaryIsoOpWithArgs handles side-ness correctly", {
     Z <- runif(5) / X
     temp <- tempfile(fileext=".h5")

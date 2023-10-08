@@ -18,6 +18,7 @@ namespace chihaya {
  *
  * @param handle An open handle on a HDF5 group representing an external array.
  * @param name Name of the group inside the file.
+ * @param version Version of the **chihaya** specification.
  *
  * @return Details of the custom array.
  * Otherwise, if the validation failed, an error is raised.
@@ -40,8 +41,10 @@ namespace chihaya {
  * thus avoiding a redundant copy of a large arrays when we only want to preserve the delayed operations.
  * Of course, it is assumed that clients will know how to retrieve specific resources from the remotes.
  */
-inline ArrayDetails validate_custom_array(const H5::Group& handle, const std::string& name) {
-    return validate_minimal(handle, name, []() -> std::string { return std::string("a custom array"); });
+inline ArrayDetails validate_custom_array(const H5::Group& handle, const std::string& name, const Version& version) try {
+    return validate_minimal(handle, []() -> std::string { return std::string("a custom array"); }, version);
+} catch (std::exception& e) {
+    throw std::runtime_error("failed to validate custom array at '" + name + "'\n- " + std::string(e.what()));
 }
 
 }

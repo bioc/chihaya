@@ -36,7 +36,7 @@ loadDelayed <- function(file, path="delayed") {
 
     } else if (identical(attrs$delayed_type, "operation")) {
         if (startsWith(attrs$delayed_operation, "custom ") && h5exists(file, path, "r_package")) {
-            candidate <- h5read(file, paste0(path, "/r_package"))
+            candidate <- h5read(file, paste0(path, "/r_package"), drop=TRUE)
             if (!isNamespaceLoaded(candidate)) {
                 loadNamespace(candidate)
             }
@@ -46,7 +46,7 @@ loadDelayed <- function(file, path="delayed") {
 
         # Check if there's a R type hint that we can use.
         if (h5exists(file, path, "r_type_hint")) {
-            altkey <- h5read(file, paste0(path, "/r_type_hint"))
+            altkey <- h5read(file, paste0(path, "/r_type_hint"), drop=TRUE)
             if (altkey %in% names(known.env$operations) && known.env$operations[[altkey]]()) {
                 key <- altkey
             }
@@ -61,7 +61,7 @@ loadDelayed <- function(file, path="delayed") {
 
     } else if (identical(attrs$delayed_type, "array")) {
         if (startsWith(attrs$delayed_array, "custom ") && h5exists(file, path, "r_package")) {
-            candidate <- h5read(file, paste0(path, "/r_package"))
+            candidate <- h5read(file, paste0(path, "/r_package"), drop=TRUE)
             if (!isNamespaceLoaded(candidate)) {
                 loadNamespace(candidate)
             }

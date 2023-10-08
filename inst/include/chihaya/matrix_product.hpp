@@ -12,13 +12,19 @@ namespace chihaya {
 /**
  * @cond
  */
-inline std::pair<ArrayDetails, bool> fetch_seed_for_product(const H5::Group& handle, const std::string& target, const std::string& orientation, const std::string& name) {
+inline std::pair<ArrayDetails, bool> fetch_seed_for_product(
+    const H5::Group& handle, 
+    const std::string& target, 
+    const std::string& orientation, 
+    const std::string& name,
+    const Version& version)
+{
     // Checking the seed.
     if (!handle.exists(target) || handle.childObjType(target) != H5O_TYPE_GROUP) {
         throw std::runtime_error(std::string("expected '") + target + "' group for a matrix product");
     }
 
-    auto seed_details = validate(handle.openGroup(target), name + "/" + target);
+    auto seed_details = validate(handle.openGroup(target), name + "/" + target, version);
     if (seed_details.dimensions.size() != 2) {
         throw std::runtime_error("expected '" + target + "' to be a 2-dimensional array for a matrix product");
     }
@@ -55,6 +61,7 @@ inline std::pair<ArrayDetails, bool> fetch_seed_for_product(const H5::Group& han
  *
  * @param handle An open handle on a HDF5 group representing a matrix product.
  * @param name Name of the group inside the file.
+ * @param version Version of the **chihaya** specification.
  *
  * @return Details of the matrix product.
  * Otherwise, if the validation failed, an error is raised.
@@ -79,9 +86,9 @@ inline std::pair<ArrayDetails, bool> fetch_seed_for_product(const H5::Group& han
  * If either `left_seed` or `right_seed` are floating-point, the output type will also be `FLOAT`.
  * Otherwise, the output type will be `INTEGER`.
  */
-inline ArrayDetails validate_matrix_product(const H5::Group& handle, const std::string& name) {
-    auto left_details = fetch_seed_for_product(handle, "left_seed", "left_orientation", name);
-    auto right_details = fetch_seed_for_product(handle, "right_seed", "right_orientation", name);
+inline ArrayDetails validate_matrix_product(const H5::Group& handle, const std::string& name, const Version& version) try {
+    auto left_details = fetch_seed_for_product(handle, "left_seed", "left_orientation", name, version);
+    auto right_details = fetch_seed_for_product(handle, "right_seed", "right_orientation", name, version);
 
     ArrayDetails output;
     output.dimensions.resize(2);
@@ -116,6 +123,8 @@ inline ArrayDetails validate_matrix_product(const H5::Group& handle, const std::
     }
 
     return output;
+} catch (std::exception& e) {
+    throw std::runtime_error("failed to validate matrix product at '" + name + "'\n- " + std::string(e.what()));
 }
 
 }

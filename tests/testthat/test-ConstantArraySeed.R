@@ -41,3 +41,28 @@ test_that("ConstantArrays are still saved correctly after some deep nesting", {
     expect_identical(Z, out)
 })
 
+test_that("ConstantArrays behave correctly with NAs", {
+    X <- ConstantArray(dim=c(12, 7), value=NA)
+    temp <- tempfile(fileext=".h5")
+    saveDelayed(X, temp)
+
+    out <- loadDelayed(temp)
+    expect_identical(X, out)
+
+    # Trying a non-Default NA.
+    X <- ConstantArray(dim=c(12, 7), value=1.2)
+    temp <- tempfile(fileext=".h5")
+    saveDelayed(X, temp)
+
+    library(rhdf5)
+    (function() {
+        fhandle <- H5Fopen(temp)
+        on.exit(H5Fclose(fhandle), add=TRUE)
+        dhandle <- H5Dopen(fhandle, "delayed/value")
+        on.exit(H5Dclose(dhandle), add=TRUE)
+        h5writeAttribute(1.2, dhandle, "missing_placeholder")
+    })()
+
+    out <- loadDelayed(temp)
+    expect_identical(ConstantArray(c(12, 7), value=NA_real_), out)
+})

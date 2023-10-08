@@ -67,9 +67,9 @@ setMethod("saveDelayedObject", "DelayedUnaryIsoOpWithArgs", function(x, file, na
     write_integer_scalar(file, name, "along", along - 1L)
 
     if (length(args) == 1L) {
-        .saveScalar(file, "value", args, parent=name)
+        .saveDataset(file, "value", args, parent=name, scalar=TRUE)
     } else if (is.null(dim(args)) || length(dim(args)) == 1L) {
-        h5write(args, file, file.path(name, "value"))
+        .saveDataset(file, "value", args, parent=name)
     } else {
         stop("multi-dimensional 'value' not supported in 'DelayedUnaryIsoOpWithArgs'")
     }

@@ -16,6 +16,7 @@ namespace chihaya {
  *
  * @param handle An open handle on a HDF5 group representing an external HDF5 array.
  * @param name Name of the group inside the file.
+ * @param version Version of the **chihaya** specification.
  *
  * @return Details of the external HDF5 array.
  * Otherwise, if the validation failed, an error is raised.
@@ -41,9 +42,9 @@ namespace chihaya {
  * Generally, we suggest referring to HDF5 datasets for dense arrays (see `data` in `validate_dense_array()`)
  * and to HDF5 groups for sparse matrices (see the expected children of `handle` in `validate_sparse_matrix()`).
  */
-inline ArrayDetails validate_external_hdf5(const H5::Group& handle, const std::string& name) {
+inline ArrayDetails validate_external_hdf5(const H5::Group& handle, const std::string& name, const Version& version) try {
     auto msg = []() -> std::string { return std::string("an external HDF5 array"); };
-    auto deets = validate_minimal(handle, name, msg);
+    auto deets = validate_minimal(handle, msg, version);
 
     {
         if (!handle.exists("file") || handle.childObjType("file") != H5O_TYPE_DATASET) {
@@ -68,6 +69,8 @@ inline ArrayDetails validate_external_hdf5(const H5::Group& handle, const std::s
     }
 
     return deets;
+} catch (std::exception& e) {
+    throw std::runtime_error("failed to validate external HDF5 array at '" + name + "'\n- " + std::string(e.what()));
 }
 
 }

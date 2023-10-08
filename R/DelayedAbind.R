@@ -22,7 +22,7 @@
 #' 
 #' @export
 #' @rdname DelayedAbind
-#' @importFrom rhdf5 h5createGroup h5write
+#' @importFrom rhdf5 h5createGroup
 setMethod("saveDelayedObject", "DelayedAbind", function(x, file, name) {
     h5createGroup(file, name)
     .labelOperationGroup(file, name, 'combine')
@@ -32,8 +32,9 @@ setMethod("saveDelayedObject", "DelayedAbind", function(x, file, name) {
 })
 
 #' @import DelayedArray
+#' @importFrom rhdf5 h5read
 .load_delayed_combine <- function(file, name, contents) {
-    along <- .load_simple_vector(file, file.path(name, "along"))
+    along <- h5read(file, file.path(name, "along"), drop=TRUE)
     seeds <- .loadList(file, "seeds", parent=name)
 
     for (i in seq_along(seeds)) {

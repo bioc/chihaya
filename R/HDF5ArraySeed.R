@@ -42,10 +42,11 @@ setMethod("saveDelayedObject", "HDF5ArraySeed", function(x, file, name) {
 })
 
 #' @importFrom HDF5Array HDF5Array
+#' @importFrom rhdf5 h5read
 .load_dense_hdf5_array <- function(file, name, contents) {
-    path <- .load_simple_vector(file, file.path(name, "file"))
-    gname <- .load_simple_vector(file, file.path(name, "name"))
-    sparse <- .load_simple_vector(file, file.path(name, "sparse"))
+    path <- h5read(file, file.path(name, "file"), drop=TRUE)
+    gname <- h5read(file, file.path(name, "name"), drop=TRUE)
+    sparse <- h5read(file, file.path(name, "sparse"), drop=TRUE)
     HDF5Array(path, gname, as.sparse=sparse > 0)
 }
 
@@ -74,8 +75,9 @@ setMethod("saveDelayedObject", "H5SparseMatrixSeed", function(x, file, name) {
 })
 
 #' @importFrom HDF5Array H5SparseMatrix
+#' @importFrom rhdf5 h5read
 .load_sparse_hdf5_matrix <- function(file, name, contents) {
-    path <- .load_simple_vector(file, file.path(name, "file"))
-    gname <- .load_simple_vector(file, file.path(name, "name"))
+    path <- h5read(file, file.path(name, "file"), drop=TRUE)
+    gname <- h5read(file, file.path(name, "name"), drop=TRUE)
     H5SparseMatrix(path, gname)
 }

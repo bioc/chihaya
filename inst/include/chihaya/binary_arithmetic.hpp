@@ -19,12 +19,12 @@ namespace chihaya {
 /**
  * @cond
  */
-inline ArrayDetails fetch_seed_for_arithmetic(const H5::Group& handle, const std::string& target, const std::string& name) {
+inline ArrayDetails fetch_seed_for_arithmetic(const H5::Group& handle, const std::string& target, const std::string& name, const Version& version) {
     if (!handle.exists(target) || handle.childObjType(target) != H5O_TYPE_GROUP) {
         throw std::runtime_error(std::string("expected '") + target + "' group for a binary arithmetic operation");
     }
 
-    auto seed_details = validate(handle.openGroup(target), name + "/" + target);
+    auto seed_details = validate(handle.openGroup(target), name + "/" + target, version);
     if (seed_details.type == STRING) {
         throw std::runtime_error(std::string("type of '") + target + "' should be numeric or boolean for a binary arithmetic operation");
     }
@@ -41,6 +41,7 @@ inline ArrayDetails fetch_seed_for_arithmetic(const H5::Group& handle, const std
  *
  * @param handle An open handle on a HDF5 group representing a binary arithmetic operation.
  * @param name Name of the group inside the file.
+ * @param version Version of the **chihaya** specification.
  *
  * @return Details of the object after applying the arithmetic operation.
  * Otherwise, if the validation failed, an error is raised.
@@ -72,9 +73,9 @@ inline ArrayDetails fetch_seed_for_arithmetic(const H5::Group& handle, const std
  *
  * Note that any boolean types in `left` and `right` are first promoted to integer before type determination.
  */
-inline ArrayDetails validate_binary_arithmetic(const H5::Group& handle, const std::string& name) {
-    auto left_details = fetch_seed_for_arithmetic(handle, "left", name);
-    auto right_details = fetch_seed_for_arithmetic(handle, "right", name);
+inline ArrayDetails validate_binary_arithmetic(const H5::Group& handle, const std::string& name, const Version& version) try {
+    auto left_details = fetch_seed_for_arithmetic(handle, "left", name, version);
+    auto right_details = fetch_seed_for_arithmetic(handle, "right", name, version);
 
     bool okay = are_dimensions_equal(left_details.dimensions, right_details.dimensions);
     if (!okay) {
@@ -99,6 +100,8 @@ inline ArrayDetails validate_binary_arithmetic(const H5::Group& handle, const st
 
     left_details.type = determine_arithmetic_type(left_details.type, right_details.type, method);
     return left_details;
+} catch (std::exception& e) {
+    throw std::runtime_error("failed to validate binary arithmetic operation at '" + name + "'\n- " + std::string(e.what()));
 }
 
 }

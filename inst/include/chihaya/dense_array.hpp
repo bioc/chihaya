@@ -19,6 +19,7 @@ namespace chihaya {
  *
  * @param handle An open handle on a HDF5 group representing a dense array.
  * @param name Name of the group inside the file.
+ * @param version Version of the **chihaya** specification.
  *
  * @return Details of the dense array.
  * Otherwise, if the validation failed, an error is raised.
@@ -38,17 +39,17 @@ namespace chihaya {
  *   If true, the dimensions of the `data` dataset are in the same order as the dimensions of the dense array.
  *   If false, the dimensions are saved in reverse order, i.e., the first dimension of the dense array is the last dimension of the `data` dataset.
  *
- * Setting `native = 0` is frequently done for efficiency when the in-memory array has a different layout than HDF5.
+ * Setting `native = 0` is frequently done for efficiency when the in-memory dense array has a different layout than the on-disk HDF5 dataset.
  * For example, Fortran, R and Julia use column-major order for their matrices, while C code (and HDF5) would typically use row-major order.
  * By setting `native = 0`, we avoid the need to reorganize the data when reading/writing from file;
- * this means that the dimensions reported by HDF5 need to be reversed to obtain the dimensions of the delayed object.
+ * however, this means that the dimensions reported by HDF5 need to be reversed to obtain the dimensions of the delayed object.
  *
  * The group may also contain:
  *
- * - A `dimnames` group, representing a list (see `ListDetails`) of length equal to the number of dimensions in the `seed`.
- *   Each child entry corresponds to a dimension of `seed` and contains the names along that dimension.
- *   Missing entries indicate that no names are attached to its dimension.
- *   Each (non-missing) entry should be a 1-dimensional string dataset of length equal to the extent of its dimension.
+ * - A `dimnames` group, representing a list (see `ListDetails`) of length equal to the number of dimensions in the dense array.
+ *   Each child entry corresponds to a dimension of the dense array and contains the names along that dimension.
+ *   The absence of a child entry indicates that no names are attached to the corresponding dimension.
+ *   Each (non-absent) entry should be a 1-dimensional string dataset of length equal to the extent of its dimension.
  *   The exact string representation is left to the implementation.
  *
  * Note that the ordering of `dimnames` is unrelated to the setting of `native`.
@@ -56,8 +57,13 @@ namespace chihaya {
  *
  * If `data` is an integer dataset, it may contain an `is_boolean` attribute.
  * This should be an integer scalar; if non-zero, it indicates that the contents of `data` should be treated as booleans where zeros are falsey and non-zeros are truthy.
+ *
+ * `data` may contain a `missing_placeholder` attribute.
+ * This should be a scalar dataset of the same type class as `data`, specifying the placeholder value used for all missing elements,
+ * i.e., any elements in `data` with the same value as the placeholder should be treated as missing.
+ * (Note that, for floating-point datasets, the placeholder itself may be NaN, so byte-wise comparison should be used when checking for missingness.)
  */
-inline ArrayDetails validate_dense_array(const H5::Group& handle, const std::string& name) {
+inline ArrayDetails validate_dense_array(const H5::Group& handle, const std::string& name, const Version& version) try {
     // Check for a 'data' group.
     if (!handle.exists("data") || handle.childObjType("data") != H5O_TYPE_DATASET) {
         throw std::runtime_error("'data' should be a dataset for a dense array");
@@ -68,6 +74,7 @@ inline ArrayDetails validate_dense_array(const H5::Group& handle, const std::str
     if (ndims == 0) {
         throw std::runtime_error("'data' should have non-zero dimensions for a dense array");
     }
+    validate_missing_placeholder(dhandle, version);
 
     ArrayDetails output;
     std::vector<hsize_t> dims(ndims);
@@ -103,7 +110,7 @@ inline ArrayDetails validate_dense_array(const H5::Group& handle, const std::str
 
     // Validating dimnames.
     if (handle.exists("dimnames")) {
-        validate_dimnames(handle, output.dimensions, "dense array");
+        validate_dimnames(handle, output.dimensions, "dense array", version);
     }
 
     // Check if it's boolean.
@@ -112,6 +119,8 @@ inline ArrayDetails validate_dense_array(const H5::Group& handle, const std::str
     }
 
     return output;
+} catch (std::exception& e) {
+    throw std::runtime_error("failed to validate dense array at '" + name + "'\n- " + std::string(e.what()));
 }
 
 }

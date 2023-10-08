@@ -26,13 +26,13 @@ setMethod("saveDelayedObject", "ConstantArraySeed", function(x, file, name) {
     h5createGroup(file, name)
     .labelArrayGroup(file, name, 'constant array')
     h5write(dim(x), file, file.path(name, "dimensions"));
-    .saveScalar(file, "value", x@value, parent=name)
+    .saveDataset(file, "value", x@value, parent=name, scalar=TRUE)
     invisible(NULL)
 })
 
 #' @import DelayedArray
 .load_constant_array <- function(file, name, contents) {
-    dim <- .load_simple_vector(file, file.path(name, "dimensions"))
-    val <- .load_simple_vector(file, file.path(name, "value")) 
+    dim <- h5read(file, file.path(name, "dimensions"), drop=TRUE)
+    val <- .load_vector_with_attributes(file, file.path(name, "value")) 
     ConstantArray(dim, value=val)
 }

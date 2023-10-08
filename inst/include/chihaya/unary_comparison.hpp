@@ -18,7 +18,7 @@ namespace chihaya {
 /**
  * @cond
  */
-inline ArrayDetails validate(const H5::Group& handle, const std::string&);
+inline ArrayDetails validate(const H5::Group& handle, const std::string&, const Version&);
 
 inline bool valid_comparison(const std::string& method) {
     return (
@@ -40,6 +40,7 @@ inline bool valid_comparison(const std::string& method) {
  *
  * @param handle An open handle on a HDF5 group representing an unary comparison operation.
  * @param name Name of the group inside the file.
+ * @param version Version of the **chihaya** specification.
  *
  * @return Details of the object after applying the comparison operation.
  * Otherwise, if the validation failed, an error is raised.
@@ -62,20 +63,28 @@ inline bool valid_comparison(const std::string& method) {
  *   The exact string representation is left to the implementation.
  * - A `value` dataset.
  *   This may be scalar or 1-dimensional.
- *   If 1-dimensional, it should have length equal to the extent specified in `along`.
  *   If `seed` contains strings, so should `value`; otherwise, both `seed` and `value` should be any of boolean, integer or float.
  *   The exact type representation is left to the implementation.
+ *
+ * If `value` is 1-dimensional, we also expect:
+ *
  * - An `along` integer scalar dataset, specifying the dimension on which to apply the operation with `value`.
  *   The exact integer representation is left to the implementation.
+ *   The length of `value` should be equal to the extent of the dimension specified in `along`.
+ *
+ * `value` may contain a `missing_placeholder` attribute.
+ * This should be a scalar dataset of the same type class as `value`, specifying the placeholder value used for all missing elements,
+ * i.e., any elements in `value` with the same value as the placeholder should be treated as missing.
+ * (Note that, for floating-point datasets, the placeholder itself may be NaN, so byte-wise comparison should be used when checking for missingness.)
  *
  * The type of the output object is always boolean.
  */
-inline ArrayDetails validate_unary_comparison(const H5::Group& handle, const std::string& name) {
+inline ArrayDetails validate_unary_comparison(const H5::Group& handle, const std::string& name, const Version& version) try {
     if (!handle.exists("seed") || handle.childObjType("seed") != H5O_TYPE_GROUP) {
         throw std::runtime_error("expected 'seed' group for an unary comparison operation");
     }
 
-    auto seed_details = validate(handle.openGroup("seed"), name + "/seed");
+    auto seed_details = validate(handle.openGroup("seed"), name + "/seed", version);
 
     // Checking the method.
     if (!handle.exists("method") || handle.childObjType("method") != H5O_TYPE_DATASET) {
@@ -119,6 +128,8 @@ inline ArrayDetails validate_unary_comparison(const H5::Group& handle, const std
         throw std::runtime_error("both or none of 'seed' and 'value' should contain strings in an unary comparison operation");
     }
 
+    validate_missing_placeholder(vhandle, version);
+
     size_t ndims = vhandle.getSpace().getSimpleExtentNdims();
     if (ndims == 0) {
         // scalar operation.
@@ -151,6 +162,8 @@ inline ArrayDetails validate_unary_comparison(const H5::Group& handle, const std
 
     seed_details.type = BOOLEAN;
     return seed_details;
+} catch (std::exception& e) {
+    throw std::runtime_error("failed to validate binary comparison operation at '" + name + "'\n- " + std::string(e.what()));
 }
 
 }

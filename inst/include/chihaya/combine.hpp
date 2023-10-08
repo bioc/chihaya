@@ -18,7 +18,7 @@ namespace chihaya {
 /**
  * @cond
  */
-inline ArrayDetails validate(const H5::Group& handle, const std::string&);
+inline ArrayDetails validate(const H5::Group& handle, const std::string&, const Version& version);
 /**
  * @endcond
  */
@@ -28,6 +28,7 @@ inline ArrayDetails validate(const H5::Group& handle, const std::string&);
  *
  * @param handle An open handle on a HDF5 group representing a combining operation.
  * @param name Name of the group inside the file.
+ * @param version Version of the **chihaya** specification.
  * 
  * @return Details of the combined object.
  * Otherwise, if the validation failed, an error is raised.
@@ -52,7 +53,7 @@ inline ArrayDetails validate(const H5::Group& handle, const std::string&);
  * Otherwise, the type of the output object is set to the most advanced `ArrayType` among all `seeds` objects.
  * For example, a mixture of `INTEGER` and `FLOAT` objects will result in a `FLOAT` output.
  */
-inline ArrayDetails validate_combine(const H5::Group& handle, const std::string& name) {
+inline ArrayDetails validate_combine(const H5::Group& handle, const std::string& name, const Version& version) try {
     if (!handle.exists("along") || handle.childObjType("along") != H5O_TYPE_DATASET) {
         throw std::runtime_error("expected 'along' dataset for a combine operation");
     }
@@ -76,7 +77,7 @@ inline ArrayDetails validate_combine(const H5::Group& handle, const std::string&
     ListDetails list_params;
 
     try {
-        list_params = validate_list(shandle);
+        list_params = validate_list(shandle, version);
     } catch (std::exception& e) {
         throw std::runtime_error(std::string("failed to load 'seeds' list for a combine operation:\n  ") + e.what());
     }
@@ -91,12 +92,12 @@ inline ArrayDetails validate_combine(const H5::Group& handle, const std::string&
 
     for (const auto& p : list_params.present) {
         auto current = shandle.openGroup(p.second);
-        auto cur_seed = validate(current, name + "/seeds/" + p.second);
+        auto cur_seed = validate(current, name + "/seeds/" + p.second, version);
 
         if (first) {
             type = cur_seed.type;
             dimensions = cur_seed.dimensions;
-            if (along >= dimensions.size()) {
+            if (static_cast<size_t>(along) >= dimensions.size()) {
                 throw std::runtime_error("'along' should be less than the seed dimensionality for a combine operation");
             }
             first = false;
@@ -118,6 +119,8 @@ inline ArrayDetails validate_combine(const H5::Group& handle, const std::string&
     }
 
     return ArrayDetails(type, std::move(dimensions));
+} catch (std::exception& e) {
+    throw std::runtime_error("failed to validate combine operation at '" + name + "'\n- " + std::string(e.what()));
 }
 
 }

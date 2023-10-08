@@ -18,7 +18,7 @@ namespace chihaya {
 /**
  * @cond
  */
-inline ArrayDetails validate(const H5::Group& handle, const std::string&);
+inline ArrayDetails validate(const H5::Group& handle, const std::string&, const Version&);
 
 inline bool valid_arithmetic(const std::string& method) {
     return (method == "+" ||
@@ -57,6 +57,7 @@ inline ArrayType determine_arithmetic_type(const ArrayType& first, const ArrayTy
  *
  * @param handle An open handle on a HDF5 group representing an unary arithmetic operation.
  * @param name Name of the group inside the file.
+ * @param version Version of the **chihaya** specification.
  *
  * @return Details of the object after applying the arithmetic operation.
  * Otherwise, if the validation failed, an error is raised.
@@ -84,13 +85,18 @@ inline ArrayType determine_arithmetic_type(const ArrayType& first, const ArrayTy
  *
  * - A `value` dataset.
  *   This can be either boolean, integer or float, and may be scalar or 1-dimensional.
- *   If 1-dimensional, it should have length equal to the extent specified in `along`.
  *   The exact type representation is left to the implementation.
  *
  * If `value` is 1-dimensional, we also expect:
  *
  * - An `along` integer scalar dataset, specifying the dimension on which to apply the operation with `value`.
  *   The exact integer representation is left to the implementation.
+ *   The length of `value` should be equal to the extent of the dimension specified in `along`.
+ *
+ * `value` may contain a `missing_placeholder` attribute.
+ * This should be a scalar dataset of the same type class as `value`, specifying the placeholder value used for all missing elements,
+ * i.e., any elements in `value` with the same value as the placeholder should be treated as missing.
+ * (Note that, for floating-point datasets, the placeholder itself may be NaN, so byte-wise comparison should be used when checking for missingness.)
  *
  * The type of the output object depends on the operation, the type of `seed` and the type of `value`:
  *
@@ -101,12 +107,12 @@ inline ArrayType determine_arithmetic_type(const ArrayType& first, const ArrayTy
  *
  * Note that any boolean types in `seed` and `value` are first promoted to integer before type determination.
  */
-inline ArrayDetails validate_unary_arithmetic(const H5::Group& handle, const std::string& name) {
+inline ArrayDetails validate_unary_arithmetic(const H5::Group& handle, const std::string& name, const Version& version) try {
     if (!handle.exists("seed") || handle.childObjType("seed") != H5O_TYPE_GROUP) {
         throw std::runtime_error("expected 'seed' group for an unary arithmetic operation");
     }
 
-    auto seed_details = validate(handle.openGroup("seed"), name + "/seed");
+    auto seed_details = validate(handle.openGroup("seed"), name + "/seed", version);
     if (seed_details.type == STRING) {
         throw std::runtime_error("type of 'seed' should be numeric or boolean for an unary arithmetic operation");
     }
@@ -161,6 +167,8 @@ inline ArrayDetails validate_unary_arithmetic(const H5::Group& handle, const std
             min_type = FLOAT;
         }
 
+        validate_missing_placeholder(vhandle, version);
+
         size_t ndims = vhandle.getSpace().getSimpleExtentNdims();
         if (ndims == 0) {
             // scalar operation.
@@ -196,6 +204,8 @@ inline ArrayDetails validate_unary_arithmetic(const H5::Group& handle, const std
     seed_details.type = determine_arithmetic_type(min_type, seed_details.type, method);
 
     return seed_details;
+} catch (std::exception& e) {
+    throw std::runtime_error("failed to validate unary arithmetic operation at '" + name + "'\n- " + std::string(e.what()));
 }
 
 }

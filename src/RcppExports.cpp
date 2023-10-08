@@ -10,13 +10,23 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// get_best_type
-std::string get_best_type(Rcpp::NumericVector values);
-RcppExport SEXP _chihaya_get_best_type(SEXP valuesSEXP) {
+// get_best_type_double
+std::string get_best_type_double(Rcpp::NumericVector values);
+RcppExport SEXP _chihaya_get_best_type_double(SEXP valuesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type values(valuesSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_best_type(values));
+    rcpp_result_gen = Rcpp::wrap(get_best_type_double(values));
+    return rcpp_result_gen;
+END_RCPP
+}
+// get_best_type_int
+std::string get_best_type_int(Rcpp::IntegerVector values);
+RcppExport SEXP _chihaya_get_best_type_int(SEXP valuesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type values(valuesSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_best_type_int(values));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -84,7 +94,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_chihaya_get_best_type", (DL_FUNC) &_chihaya_get_best_type, 1},
+    {"_chihaya_get_best_type_double", (DL_FUNC) &_chihaya_get_best_type_double, 1},
+    {"_chihaya_get_best_type_int", (DL_FUNC) &_chihaya_get_best_type_int, 1},
     {"_chihaya_h5exists", (DL_FUNC) &_chihaya_h5exists, 3},
     {"_chihaya_validate_", (DL_FUNC) &_chihaya_validate_, 2},
     {"_chihaya_write_integer_scalar", (DL_FUNC) &_chihaya_write_integer_scalar, 4},
