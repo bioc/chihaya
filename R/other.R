@@ -133,6 +133,6 @@ setMethod("saveDelayedObject", "ANY", function(x, file, name) {
     if (!isNamespaceLoaded("ResidualMatrix")) {
         loadNamespace("ResidualMatrix")
     }
-    seed <- new("ResidualMatrixSeed", .matrix = .matrix, Q = Q, Qty = Qty, transposed = transposed)
+    seed <- new("ResidualMatrixSeed", .matrix = .matrix, Q = as.matrix(Q), Qty = as.matrix(Qty), transposed = transposed)
     DelayedArray(seed)
 }
