@@ -22,7 +22,7 @@ A group is created at \code{name} containing the contents of \code{x}.
 }
 \description{
 Methods to save simple seed classes - namely, ordinary matrices or sparse \pkg{Matrix} objects - into the delayed operation file.
-See \dQuote{Dense arrays} and \dQuote{Sparse matrices} at \url{https://ltla.github.io/chihaya} for more details.
+See \dQuote{Dense arrays} and \dQuote{Sparse matrices} at \url{https://artifactdb.github.io/chihaya/} for more details.
 }
 \details{
 For string arrays, missing values are handled by the \code{"missing-value-placeholder"} attribute on the \code{data} dataset.

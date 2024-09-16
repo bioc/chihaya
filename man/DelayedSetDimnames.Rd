@@ -19,7 +19,7 @@ A group is created at \code{name} containing the contents of the DelayedSetDimna
 }
 \description{
 Save a \linkS4class{DelayedSetDimnames} object.
-See the \dQuote{Dimnames assignment} operation at \url{https://ltla.github.io/chihaya} for more details.
+See the \dQuote{Dimnames assignment} operation at \url{https://artifactdb.github.io/chihaya/} for more details.
 }
 \examples{
 X <- DelayedArray(matrix(runif(100), ncol=20))

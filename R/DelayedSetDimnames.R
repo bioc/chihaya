@@ -1,7 +1,7 @@
 #' Saving a DelayedSetDimnames
 #'
 #' Save a \linkS4class{DelayedSetDimnames} object.
-#' See the \dQuote{Dimnames assignment} operation at \url{https://ltla.github.io/chihaya} for more details.
+#' See the \dQuote{Dimnames assignment} operation at \url{https://artifactdb.github.io/chihaya/} for more details.
 #'
 #' @param x A \linkS4class{DelayedSetDimnames} object.
 #' @inheritParams saveDelayedObject

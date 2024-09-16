@@ -1,7 +1,7 @@
 #' Saving a ConstantArraySeed
 #'
 #' Save a \linkS4class{ConstantArraySeed} object.
-#' See the \dQuote{Constant array} section at \url{https://ltla.github.io/chihaya} for more details.
+#' See the \dQuote{Constant array} section at \url{https://artifactdb.github.io/chihaya/} for more details.
 #'
 #' @param x A \linkS4class{ConstantArraySeed} object.
 #' @param file String containing the path to a HDF5 file.

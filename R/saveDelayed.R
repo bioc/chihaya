@@ -12,7 +12,7 @@
 #'
 #' @details
 #' See the various \code{\link{saveDelayedObject}} methods for how each suite of delayed operations is handled.
-#' Also see \url{https://ltla.github.io/chihaya} for more details on the data layout inside the HDF5 file.
+#' Also see \url{https://artifactdb.github.io/chihaya/} for more details on the data layout inside the HDF5 file.
 #'
 #' @author Aaron Lun
 #' @examples

@@ -1,7 +1,7 @@
 #' Saving a DelayedUnaryIsoOpWithArgs
 #'
 #' Save a \linkS4class{DelayedUnaryIsoOpWithArgs} object into a HDF5 file.
-#' See the \dQuote{Unary ...} operation at \url{https://ltla.github.io/chihaya} for more details.
+#' See the \dQuote{Unary ...} operation at \url{https://artifactdb.github.io/chihaya/} for more details.
 #'
 #' @param x A \linkS4class{DelayedUnaryIsoOpWithArgs} object.
 #' @inheritParams saveDelayedObject

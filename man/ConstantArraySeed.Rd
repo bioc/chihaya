@@ -19,7 +19,7 @@ A group is created at \code{name} containing the contents of the ConstantArraySe
 }
 \description{
 Save a \linkS4class{ConstantArraySeed} object.
-See the \dQuote{Constant array} section at \url{https://ltla.github.io/chihaya} for more details.
+See the \dQuote{Constant array} section at \url{https://artifactdb.github.io/chihaya/} for more details.
 }
 \examples{
 X <- ConstantArray(value=NA_real_, dim=c(11, 25))

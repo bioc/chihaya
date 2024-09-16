@@ -1,7 +1,7 @@
 #' Saving simple seed classes
 #'
 #' Methods to save simple seed classes - namely, ordinary matrices or sparse \pkg{Matrix} objects - into the delayed operation file.
-#' See \dQuote{Dense arrays} and \dQuote{Sparse matrices} at \url{https://ltla.github.io/chihaya} for more details.
+#' See \dQuote{Dense arrays} and \dQuote{Sparse matrices} at \url{https://artifactdb.github.io/chihaya/} for more details.
 #'
 #' @param x An R object of the indicated class.
 #' @inheritParams saveDelayedObject

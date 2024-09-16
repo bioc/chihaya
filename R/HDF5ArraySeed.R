@@ -1,7 +1,7 @@
 #' Save HDF5-based seeds
 #'
 #' Save \linkS4class{HDF5ArraySeed} or \linkS4class{H5SparseMatrix} objects or their subclasses.
-#' See \dQuote{External HDF5 arrays} at \url{https://ltla.github.io/chihaya} for more details.
+#' See \dQuote{External HDF5 arrays} at \url{https://artifactdb.github.io/chihaya/} for more details.
 #' 
 #' @param x A \linkS4class{HDF5ArraySeed} or \linkS4class{H5SparseMatrix} object or subclass thereof.
 #' @inheritParams saveDelayedObject

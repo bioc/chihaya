@@ -19,7 +19,7 @@ A group is created at \code{name} containing the contents of the DelayedSubset.
 }
 \description{
 Save a \linkS4class{DelayedSubset} object into a HDF5 file.
-See the \dQuote{Subsetting} operation at \url{https://ltla.github.io/chihaya} for more details.
+See the \dQuote{Subsetting} operation at \url{https://artifactdb.github.io/chihaya/} for more details.
 }
 \examples{
 X <- DelayedArray(matrix(runif(100), ncol=20))

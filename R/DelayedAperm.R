@@ -1,7 +1,7 @@
 #' Saving a DelayedAperm
 #'
 #' Save a \linkS4class{DelayedAperm} object.
-#' See the \dQuote{Transposition} operation at \url{https://ltla.github.io/chihaya} for more details.
+#' See the \dQuote{Transposition} operation at \url{https://artifactdb.github.io/chihaya/} for more details.
 #'
 #' @param x A \linkS4class{DelayedAperm} object.
 #' @inheritParams saveDelayedObject
